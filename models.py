@@ -210,25 +210,26 @@ class InitData:
         # db.session.commit()
         dirs_old={i[0] for i in db.session.query( Dir.path ).all()}
         dirs={i[0] for i in db.session.query(distinct(File.dir)).all()}.difference(dirs_old)
-    
+        count_dir=db.session.query(Dir).count() 
         # 添加目录
-        def f(dirs):
+        def f(dirs,is_extra=False):
             for item in dirs:
-                i=Dir(path=item,dir=str(Path(item).parent),level=item.count('\\'))
+                i=Dir(path=item,dir=str(Path(item).parent),level=item.count('\\'),is_extra=is_extra)
                 db.session.add(i)
                 db.session.commit()
         f(dirs)
-        count_dir=db.session.query(Dir).count() 
-        mes1='解析目录：{}'.format(count_dir)
-         # 含有多个子文件夹的文件夹 添加
         
-        import_dirs= db.session.query(Dir.dir,func.count(Dir.dir)).group_by(Dir.dir).filter(Dir.is_extra==None).all() 
+        mes1='解析目录：{}'.format(db.session.query(Dir).count()-count_dir )
+        count_dir=db.session.query(Dir).count()
+         # 含有多个子文件夹的文件夹 添加
+        dirs_old={i[0] for i in db.session.query( Dir.path ).all()} 
+        import_dirs= db.session.query(Dir.dir,func.count(Dir.dir)).group_by(Dir.dir).filter(Dir.is_extra==False).all() 
         dirs={i[0] for i in import_dirs if i[1]>2}.difference(dirs_old)
-        f(dirs)
+        f(dirs,is_extra=True)
         mes2='额外重要目录：{}'.format(db.session.query(Dir).count()-count_dir )
 
         print(mes1,mes2)
-        self.dir_rank()
+        self.dir_rank() 
         return mes2
 
     def run(self):
