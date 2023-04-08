@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block page_content %}
+ 
+<div id="play">
+    <a href="/log/delall"> 删除所有</a>
+    <a href="/log/del"> 删除所有 不包括置顶</a>
+    {% for log in logs %}
+    <li>
+        <!-- 链接 -->
+        <a href="{{log.url}}"> {{log.index}}  {{log.time}} {{log.url}}</a>
+        <!-- 选项 -->
+        {% if log.is_top %}
+                <a href="/log/{{log.id}}/top" style= "background-color: crimson ;" >置顶</a>
+        {% else %}
+                <a href="/log/{{log.id}}/top" style= "background-color:bisque ;" >置顶</a>
+        {% endif %}
+        
+        <a href="/log/{{log.id}}/del">删除</a>
+        <br>
+        <br>
+      
+
+    </li>
+    {% endfor %}
+    
+</div>
+       
+ 
+ 
+{% endblock %}

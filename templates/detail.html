@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block page_content %}
+<div class="page-header">
+    <h1>
+        {% block subtitle %}
+        {% if post and  post.name%}{{post.name}}
+        {%else%}Hello World!{%endif%}
+        {% endblock %}
+    </h1>
+</div>
+
+
+{%if post%} 
+    <div class="info">
+        <!-- 标记信息 -->
+    {%if post.tag%} 
+    <h1>like:{{ post.tag.like}} <br>  tag:{{post.tag.tag }}<br> kw:{{post.kw }}<br> </h1>
+    {% endif%}
+    <!-- 源文件 -->
+    <div class="file">
+        {%if post.type=='music'%}
+    <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.name}}" alt="{{post.name}}"
+        preload="metadata" controls='controls'></audio>
+    {%elif post.type=='video'%}
+    <video src="/file/{{post.id}}" controls  >
+        {%if post.sub%}
+        <track label="中文" kind="subtitles" srclang="en" src={{ url_for('main_bp.static',filename=post.sub) }} default>
+        {%endif %}
+    </video>
+    {%elif post.type=='img'%}
+    <img src="/file/{{post.id}}" alt={{post.name}}>
+    {%endif %}
+    </div>
+    <!-- 文件信息 -->
+    <h1>size:{{ post.vsize}} <br> 文件名:{{post.name }}<br> </h1>
+    <p> 路径:{{post.path}}</p>
+    </div>
+    
+    <!-- 下载链接 -->
+    <a href="/file/{{post.id}}?down=1" download="{{post.name}}">下载</a>
+{%endif %}
+{%if form%}
+{{ wtf.quick_form(form,id="tagForm") }}
+{%endif%}
+{% endblock %}

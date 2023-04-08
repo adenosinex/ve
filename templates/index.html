@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Gallery{% endblock %}
+{% block page_content %}
+ 
+<!-- 搜索栏 -->
+<div>
+     <!--示例 {{ wtf.quick_form(form, id='loginform', action='/login', form_type='horizontal', horizontal_columns=('lg',4,4)) }} -->
+    {%if form%}
+    {{ wtf.quick_form(form,id="searchForm") }}
+    {%endif%}
+    <br>
+</div>
+
+<!-- 展示列表 -->
+<div class="post-tabs">
+    {%if pages and spend_time%} <h1>获取数据{{pages}}  db耗时：{{spend_time}} {%if type%}类型：{{type}}  {%endif%}</h1>{%endif%}
+    <!-- 路径链接 -->
+    {%if dirs_data%}
+    <a href={{url_for(endpoint, dir_num = dirs_data['parent'].id, **kwargs_link)}}>上级目录</a>
+    <a href={{url_for(endpoint, dir_num = dirs_data['current'].id, **kwargs_link)}}>当前目录：{{dirs_data['current'].path}}</a>
+    {% for i in dirs_data['dirs'] %}
+       
+    <li  class="col col-4 ">
+        <a href={{url_for(endpoint, dir_num = i.id, **kwargs_link)}}>{{i.vpath}}</a>
+    </li>
+     {% endfor %}
+    {%endif%}
+    {% block posts %}
+    
+    <div class="row row-cols-2 row-cols-sm-2 row-cols-md-5 g-3">
+
+        {% for post in pagination.items %}
+       {{ macros.imgview_widget( post  ) }}
+        {% endfor %}
+    <div>
+    
+    {% endblock %}
+     
+</div>
+
+<!-- 分页列表 -->
+{% if pagination %}
+<div class="pagination">
+    <!-- 链家加搜索参数 -->
+      {%if kwargs_page %}
+          {{ macros.pagination_widget(pagination, endpoint,kwargs=kwargs_page) }}
+        {%else %}
+            {{ macros.pagination_widget(pagination, endpoint) }}
+         
+        {%endif %}
+</div>
+{% endif %}
+ 
+{% endblock %}

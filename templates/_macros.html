@@ -1,0 +1,71 @@
+
+{% macro pagination_widget(pagination, endpoint,kwargs=dict()) %}
+<!-- 页码栏 -->
+<ul class="pagination row row-cols-3 row-cols-sm-2 row-cols-md-3 g-3"   >
+    <li{% if not pagination.has_prev %} class="disabled"{% endif %}>
+        <a href="{% if pagination.has_prev %}{{ url_for(endpoint, pn=pagination.prev_num, **kwargs) }}{% else %}#{% endif %}">
+            &laquo;
+        </a>
+    </li>
+    {% for p in pagination.iter_pages()  %}
+        {% if p %}
+            {% if p == pagination.page %}
+            <li class="active">
+                <a href="{{ url_for(endpoint, pn = p, **kwargs) }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li>
+                <a href="{{ url_for(endpoint, pn = p, **kwargs) }}">{{ p }}</a>
+            </li>
+            {% endif %}
+        {% else %}
+        <li class="disabled"><a href="#">&hellip;</a></li>
+        {% endif %}
+
+    {% endfor %}
+    <li{% if not pagination.has_next %} class="disabled"{% endif %}>
+        <a href="{% if pagination.has_next %}{{ url_for(endpoint, pn=pagination.next_num, **kwargs) }}{{ fragment }}{% else %}#{% endif %}">
+            &raquo;
+        </a>
+    </li>
+</ul>
+{% endmacro %}
+
+{% macro imgview_widget(post) %}
+<div class="preview col col-6 col-xs-6 col-lg-2 " data-id="{{post.id}}" data-name="{{post.name}}">
+    <div class="card shadow-sm">
+    <!-- 图片 -->
+    
+    {% if post.type=='img' or post.suffix=='img'%}
+    <img src={{ url_for('api_bp.static',filename='{}.jpg'.format(post.id))}} class="img-responsive center-block " data-link="/detail/{{post.id}}" data-id="{{post.id}}" >
+    {% elif post.type=='video' %}
+    <img src={{ url_for('api_bp.static',filename='{}.gif'.format(post.id))}} class="img-responsive center-block " data-link="/detail/{{post.id}}" data-id="{{post.id}}">
+    {% elif post.type=='music' %}  
+    <audio src="/file/{{post.id}}" data-desc= "{{post.name}}"  class="img-responsive center-block "  data-link="/detail/{{post.id}}" data-id="{{post.id}}"  ></audio>
+    {%endif%}
+ 
+      <div class="card-body">
+        <!-- 文件名 -->
+        <p class="card-text">name:{{post.name}}  </p>
+        <!-- 形容 -->
+        {%if post.kw%}
+        <p class="card-text">desc:  {{post.kw   }}</p>
+        {%endif%}
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="btn-group">
+           <!-- 按钮 -->
+            <a href='/detail/{{post.id}}'>
+              <button type="button" class="btn btn-sm btn-outline-secondary src" >View</button>
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary like  {%if post.is_like %} is_like {%endif%}"  data-id={{post.id}} data-like="{{post.like}}" >like</button>
+            <a href='/play/{{post.id}}'>
+              <button type="button" class="btn btn-sm btn-outline-secondary  play"   >play</button>
+            </a>
+          </div>
+          <small class="text-muted">{{  post.vsize  }} </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endmacro %}

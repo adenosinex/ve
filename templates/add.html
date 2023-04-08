@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Gallery{% endblock %}
+{% block page_content %}
+ 
+<!-- 搜索栏 -->
+<div>
+     <!--示例 {{ wtf.quick_form(form, id='loginform', action='/login', form_type='horizontal', horizontal_columns=('lg',4,4)) }} -->
+    {%if form%}
+    {{ wtf.quick_form(form ) }}
+    {%endif%}
+    <br>
+</div>
+
+{%if message%}
+<p>message</p>
+{%endif%}
+ 
+{% endblock %}
