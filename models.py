@@ -3,7 +3,7 @@
 #     os,Path
  
 from datetime import datetime
-from sqlalchemy import and_,or_,case,distinct,or_
+from sqlalchemy import and_,or_,case,distinct,or_,func
 # from sqlalchemy.orm import or_
 from factory import db,who
 from flask import current_app as app
@@ -75,6 +75,7 @@ class Dir(db.Model):
     id=db.Column(db.Integer ,primary_key=True)
     path=db.Column(db.String,unique=True)
     dir=db.Column(db.String)
+    is_extra=db.Column(db.Boolean)
     level=db.Column(db.Integer)
     rank=db.Column(db.Integer)
 
@@ -183,7 +184,7 @@ class InitData:
              self._small_file(i.path,i.id,i.type)
         multi_threadpool(func=f,args=r,desc='生成缩略图 gif',pool_size=6)
 
-    def init(self,file_path):
+    def init_file(self,file_path):
         # 初始化数据
         # 文件数据与缩略图
         if isinstance(file_path,list):
@@ -201,40 +202,45 @@ class InitData:
         multi_threadpool(func=self._index_file,args=files,desc='数据初始化')
         mes1='数据库数据：{}'.format(db.session.query(File).count()-t)
         print(mes1)
-       
-        # 目录数据
-        dirs={i[0] for i in db.session.query(distinct(File.dir)).all()}
-        # 目录统计数据
-        old_dirs={i[0] for i in  db.session.query(distinct(Dir.path)).all()}
-        # 移除的目录
-        rm_dirs=old_dirs.difference(dirs)
-        if rm_dirs:
-            for i in rm_dirs:
-               s=db.session.query(Dir).filter_by(path=i).first()
-               db.session.delete(s)
-               db.session.commit()
-        t=db.session.query(Dir).count()
+        return mes1
+
+    def init_dir(self):
+        # 目录数据 擦除重新分析
+        # db.session.query(Dir).delete(synchronize_session=False)
+        # db.session.commit()
+        dirs_old={i[0] for i in db.session.query( Dir.path ).all()}
+        dirs={i[0] for i in db.session.query(distinct(File.dir)).all()}.difference(dirs_old)
+    
         # 添加目录
-        for item in dirs:
-            if item in old_dirs:
-                continue
-            i=Dir(path=item,dir=str(Path(item).parent),level=item.count('\\'))
-            db.session.add(i)
-            db.session.commit()
-        mes2='解析目录：{}'.format(db.session.query(Dir).count()-t)
-        print(mes2)
-        return f'{mes1}\n{mes2}'
+        def f(dirs):
+            for item in dirs:
+                i=Dir(path=item,dir=str(Path(item).parent),level=item.count('\\'))
+                db.session.add(i)
+                db.session.commit()
+        f(dirs)
+        count_dir=db.session.query(Dir).count() 
+        mes1='解析目录：{}'.format(count_dir)
+         # 含有多个子文件夹的文件夹 添加
+        
+        import_dirs= db.session.query(Dir.dir,func.count(Dir.dir)).group_by(Dir.dir).filter(Dir.is_extra==None).all() 
+        dirs={i[0] for i in import_dirs if i[1]>2}.difference(dirs_old)
+        f(dirs)
+        mes2='额外重要目录：{}'.format(db.session.query(Dir).count()-count_dir )
+
+        print(mes1,mes2)
+        self.dir_rank()
+        return mes2
 
     def run(self):
         # 初始化默认目录
-        self.init(self.files_path)
+        self.init_file(self.files_path)
+        self.init_dir()
         self.ana_number()
         self.smallfiles_path()
 
       
          
     def dir_rank(self):
-        
         # dirs=db.session.query(Dir).order_by(Dir.level).filter_by(rank=None ).all()
         dirs=db.session.query(Dir).order_by(Dir.level).all()
         for i in range(len(dirs)):
@@ -257,11 +263,11 @@ class InitData:
             if isinstance(p,list):
                 for i in p:
                     # 初始化新文件夹
-                    self.init(i)
+                    self.init_file(i)
                 
             else:
                     # 初始化新文件夹
-                    self.init(p)
+                    self.init_file(p)
             #  生成缩略图
             self.dir_rank()
             self.create_small_file()

@@ -13,9 +13,9 @@ per_page=100
 
 with app.app_context():
         # who.reindex()
-         
+        
         db.create_all()
-        InitData().scan_dir
+        InitData().init_dir()
         # InitData().scan_dir( r'E:\picture\t\图文数据',app)
         # exit()
         # Dir.se.commit()
@@ -49,7 +49,7 @@ def logs(id='',op=''):
             logs=db.session.query(Log).filter(or_(Log.is_top==None,Log.is_top==False)).all()
             [db.session.delete(i)for i in logs]
         db.session.commit()
-        redirect(request.referrer)
+        redirect(request.referrer) 
      
     logs=db.session.query(Log).filter(or_(Log.is_top==None,Log.is_top==False)).order_by(Log.utime.desc()).all()
     toplogs=db.session.query(Log).filter_by(is_top=True).order_by(Log.utime.desc()).all()
