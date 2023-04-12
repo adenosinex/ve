@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os,re,subprocess,hashlib
+import os,re,subprocess,hashlib,datetime
 import sqlite3
- 
+from urllib.parse import urlparse,parse_qs
 from pathlib import Path
 import time,os
 from progress.bar import Bar
@@ -551,22 +551,21 @@ def multi_threadpool(func,args, pool_size=1,desc='多线程',split_args=False):
         return ret_list
 
 from threading import Thread
+def thread_back(func,app):
+    def f():
+        with app.app_context():
+            func()
+    a=Thread(target=f  )
+    a.daemon=True
+    a.start()
+
 def f():
     p=r"C:\Users\Zin\Documents\testdata\mixdata\like hd -img\Antelope Canyon.jpg"
     t=r'C:\Users\Zin\Documents\testdata\t'
-    def f():
-        time.sleep(3)
-        print('f')
     
-    def g():
-        a=Thread(target=f)
-        a.daemon=True
-        a.start()
-        return 'm'
-        
-    t=g()
-    print(t)
-    time.sleep(3)
+ 
+    print('end')
+     
     # VideoM().shot_gif(i,base.joinpath(Path(i).name).with_suffix('.gif'),t='20%' )
     
 

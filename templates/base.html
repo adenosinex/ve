@@ -24,6 +24,8 @@ type="text/css">
     <li class="nav-item"> <a href="/keep" class="nav-link">继续浏览  </a>  </li>
     <li class="nav-item">  <a href="/log" class="nav-link" target="_blank">历史记录</a> </li>
     <li class="nav-item">  <a href="/add" class="nav-link">添加文件夹</a> </li>
+    <li class="nav-item">  <a href="/share" class="nav-link">文件共享</a> </li>
+    <li class="nav-item">  <a href="/new" class="nav-link">new</a> </li>
   </ul>
 </header>
 {% endblock %}
@@ -45,11 +47,13 @@ type="text/css">
  
 
 {% block scripts %}
-{{ super() }}
+ 
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/axios.min.js') }}"></script>
+
 
 <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
 <script src={{ url_for('static', filename='control.js') }}></script>

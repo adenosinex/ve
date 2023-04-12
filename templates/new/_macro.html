@@ -1,0 +1,11 @@
+{% macro thumbnail(post)%}
+
+{% if post.type=='img' %}
+<img src={{ url_for('api_bp.static',filename='{}.jpg' .format(post.id))}} alt="{{post.naem}}">
+    {% elif post.type=='video' %}
+    <img src={{ url_for('api_bp.static',filename='{}.gif' .format(post.id))}} alt="{{post.naem}}">
+    {% endif %}
+<div class="overlay">
+    <div class="overlay-text">{{post.name}}</div>
+</div>
+{% endmacro %}

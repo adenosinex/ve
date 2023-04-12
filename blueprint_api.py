@@ -25,6 +25,13 @@ def response_soure(p):
     return [f,206,headers]
  
 # 单个媒体数据 
+@api_bp.route("/share/<id>")  
+def src_share_file(id):
+    p=os.getenv('SAVE')+'/'+id
+    if os.path.exists(p):
+        return Response( open(p,'rb').read(),content_type='application/octet-stream')
+    
+
 @api_bp.route("/file/<id>")  
 def src_file(id):
     # id接受查询
@@ -61,4 +68,11 @@ def tag_file(id):
             r=item.set_like()
         else:
             r=item.set_tag(tag)
-        return jsonify(r)
+        return redirect(request.referrer)
+
+@api_bp.route('/now')
+def api_now( ):
+    r={
+        'now':datetime.now()
+    }
+    return jsonify(r)

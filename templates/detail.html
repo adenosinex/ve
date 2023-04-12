@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
+{% block title %}{{post.name}}-{{post.ctime}}{% endblock %}
+
 {% block page_content %}
 <div class="page-header">
     <h1>
@@ -10,12 +12,11 @@
     </h1>
 </div>
 
-
 {%if post%} 
     <div class="info">
-        <!-- 标记信息 -->
+        <!-- 文件添加信息 -->
     {%if post.tag%} 
-    <h1>like:{{ post.tag.like}} <br>  tag:{{post.tag.tag }}<br> kw:{{post.kw }}<br> </h1>
+    <h1>like:{{ post.tag.like}} <br>  tag:{{post.tag.tag }}  </h1>
     {% endif%}
     <!-- 源文件 -->
     <div class="file">
@@ -33,10 +34,16 @@
     {%endif %}
     </div>
     <!-- 文件信息 -->
-    <h1>size:{{ post.vsize}} <br> 文件名:{{post.name }}<br> </h1>
+    <h1>ctime:{{ post.ctime}} 
+        <br> size:{{ post.vsize}} <br> 文件名:{{post.name }}<br> </h1>
     <p> 路径:{{post.path}}</p>
-    </div>
+    <p>快捷添加tag</p>
+    {% for tag in tags %}
+        <a href="/tag/{{post.id}}?tag={{tag}}" class="tag">{{tag}}</a>  
+    {% endfor %}
     
+    </div>
+    <hr>
     <!-- 下载链接 -->
     <a href="/file/{{post.id}}?down=1" download="{{post.name}}">下载</a>
 {%endif %}

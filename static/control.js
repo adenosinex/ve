@@ -1,15 +1,16 @@
 
+// import axios from 'js/axios.min.js'
 // 单个视频页面限制高度满屏
 let allVideos = document.querySelectorAll('video')
- 
-  if (allVideos.length===1){
-    let fullHeight = window.innerHeight;
-        allVideos[0].height = fullHeight;
-        console.log('set height'+fullHeight)
-  
-  }
 
-  // 测试添加链接
+if (allVideos.length === 1) {
+    let fullHeight = window.innerHeight;
+    allVideos[0].height = fullHeight;
+    console.log('set height' + fullHeight)
+
+}
+
+// 测试添加链接
 // let a=document.createElement('audio')
 // a.src='/file/762C0E1413006A091A1FF0B653DE1683C3DC5D9A'
 // a.setAttribute('controls',true)
@@ -21,7 +22,7 @@ let allVideos = document.querySelectorAll('video')
 let medias = [];
 let tagAttr = {
     'video': { 'width': '100%', 'controls': 'true', 'autoplay': 'true' },
-    'audio': { 'controls': 'true','loop':'' },
+    'audio': { 'controls': 'true', 'loop': '' },
     // 'img': { 'width': '100%' }
 }
 
@@ -36,14 +37,14 @@ function setAttr(nodes, attr) {
         Array.from(Object.entries(attr)).forEach((key, index) => node.setAttribute(key[0], key[1]))
     )
 }
- 
 
- 
+
+
 
 //    索引链接
 let divs = document.querySelectorAll('.col')
 let links_page = Array.from(document.querySelectorAll('a')).filter((node) => { return node.href.includes('pn') })
- 
+
 
 // 预览节点 点击详情
 let previews = document.querySelectorAll('.preview')
@@ -52,7 +53,7 @@ previews.forEach((node) => {
     node.addEventListener('click', (e) => {
         // e.preventDefault()
         let id = e.target.dataset.id;
-        window.location.href = '/detail/'+id
+        window.location.href = '/detail/' + id
     })
 })
 
@@ -64,7 +65,7 @@ if (previews.length > 5) {
     previewsList = new Array();
     [].forEach.call(previews, (node) => {
         let id = node.dataset.id;
-        previewsDict[id] = '/detail/'+id
+        previewsDict[id] = '/detail/' + id
         previewsList.push(id)
     })
     previewsDict['index'] = previewsList
@@ -77,67 +78,94 @@ else {
 
 }
 
- 
- 
+
+
 // 详情页三击 下一页
-nclickEvent(3, document, (e)=> {
-  let b=location.href.split('/')
-  let id=b[b.length-1]
-  let index = previewsList.indexOf(id)
+nclickEvent(3, document, (e) => {
+    let b = location.href.split('/')
+    let id = b[b.length - 1]
+    let index = previewsList.indexOf(id)
 
-  if (id && location.pathname.includes('detail')) {
-      let clickY = e.clientY
-      let mediaY;
-      let rect;
-      for (let i = 0; i < medias.length; i++) {
-          try {
-               rect= medias[i][0].getBoundingClientRect()
-               mediaY=rect.y
-              break
-          }
-          catch {
+    if (id && location.pathname.includes('detail')) {
+        let clickY = e.clientY
+        let mediaY;
+        let rect;
+        for (let i = 0; i < medias.length; i++) {
+            try {
+                rect = medias[i][0].getBoundingClientRect()
+                mediaY = rect.y
+                break
+            }
+            catch {
 
-          }
-      }
-      let plus 
-      let half=rect.height/2
-      if (clickY > mediaY+half)
-          plus = -1
-      else if (clickY < mediaY-half)
-          plus = 1
-      else
-        return
-      index=index + plus
-      if (index === previewsList.length)
-          index = 0
-      else if (index === -1)
-          index=previewsList.length-1
+            }
+        }
+        let plus
+        let half = rect.height / 2
+        if (clickY > mediaY + half)
+            plus = -1
+        else if (clickY < mediaY - half)
+            plus = 1
+        else
+            return
+        index = index + plus
+        if (index === previewsList.length)
+            index = 0
+        else if (index === -1)
+            index = previewsList.length - 1
 
-      let url = previewsDict[previewsList[index]]
-      let id =  previewsList[index] 
-      window.location.href =  url
-  }
+        let url = previewsDict[previewsList[index]]
+        let id = previewsList[index]
+        window.location.href = url
+    }
 })
 // 获取id正则 获取下一个id
-let ReId=/[A-Z\d]{40}/
+let ReId = /[A-Z\d]{40}/
 
 // 获取指定位置id 超范围自动循环
-function secureId(index){
+function secureId(index) {
     if (index === previewsList.length)
         index = 0
     else if (index === -1)
-    index=previewsList.length-1
+        index = previewsList.length - 1
     return previewsList[index]
 }
 
+// axios part
+// 链接发送后台请求 变色 点击红 成功绿 失败白
+function clickAWithColor(node){
+    node.addEventListener('click',(e)=>{
+        e.preventDefault()
+        let node=e.target
+        node.style.backgroundColor='red'
+        axios.get(node.href)
+        .then(function (response) {
+            node.style.backgroundColor='green'
+        })
+        .catch(function (error) {
+            node.style.backgroundColor='white'
+        })}
+        )
+}
+// axios.interceptors.response.use(
+//     function (response) {
+//       // 在这里对响应进行处理
+//       return response;
+//     },
+//     function (error) {
+//       // 处理请求错误
+//       return Promise.reject(error);
+//     }
+//   );
+
 //   播放页 自动播放
 // if (location.pathname.includes('play')){
-     
+
 //     nclickEvent(1, document, (e)=> {
 //     let b=location.href.split('/')
 //     let id=b[b.length-1]
 //     let index = previewsList.indexOf(id)
-  
+
 //     if (id && location.pathname.includes('detail')) {
 //         let clickY = e.clientY
 //         let mediaY;
@@ -149,7 +177,7 @@ function secureId(index){
 //                 break
 //             }
 //             catch {
-  
+
 //             }
 //         }
 //         let plus 
@@ -165,7 +193,7 @@ function secureId(index){
 //             index = 0
 //         else if (index === -1)
 //             index=previewsList.length-1
-  
+
 //         let url = previewsDict[previewsList[index]]
 //         let id =  previewsList[index] 
 //         window.location.href =  url
@@ -173,226 +201,260 @@ function secureId(index){
 //   })
 // }
 //   播放页滑动播放
-if (location.pathname.includes('play')){
-      // 获取id
-     // 获取文件自动播放 设置id
-     let file=$('#play').children()[0]
-     let tagname=file.tagName
-     if (tagname==='VIDEO' ||tagname==='AUDIO')
-     file.play()
+if (location.pathname.includes('play')) {
+    // 获取id
+    // 获取文件自动播放 设置id
+    let file = $('#play').children()[0]
+    let tagname = file.tagName
+    if (tagname === 'VIDEO' || tagname === 'AUDIO')
+        file.play()
 
-    
-    let id=ReId.exec(file.src)[0]
 
-    let target=document.createElement('a')
-    target.href='/detail/'+id
-    let btn=document.createElement('button')
-    btn.textContent='详情'
-    btn.className="btn btn-large btn-primary"
+    let id = ReId.exec(file.src)[0]
+
+    let target = document.createElement('a')
+    target.href = '/detail/' + id
+    let btn = document.createElement('button')
+    btn.textContent = '详情'
+    btn.className = "btn btn-large btn-primary"
     target.appendChild(btn)
-    
-    let insertObj=$('#play')[0]
-    insertObj.insertBefore(target,insertObj.children[0])
 
-    
+    let insertObj = $('#play')[0]
+    insertObj.insertBefore(target, insertObj.children[0])
+
+
     var startx, starty;
     let stime;
-    
+
+    document.body.addEventListener('touchmove', function (e) {
+        e.preventDefault();
+    }, { passive: false });
     //获得角度
     function getAngle(angx, angy) {
         return Math.atan2(angy, angx) * 180 / Math.PI;
     };
-    
+
     //根据起点终点返回方向 1向上滑动 2向下滑动 3向左滑动 4向右滑动 0点击事件
     function getDirection(startx, starty, endx, endy) {
         var angx = endx - startx;
         var angy = endy - starty;
         var result = 0;
-    
+
         //如果滑动距离太短
         if (Math.abs(angx) < 2 && Math.abs(angy) < 2) {
             return result;
         }
-    
+
         var angle = getAngle(angx, angy);
         if (angle >= -135 && angle <= -45) {
-            result = 1;
+            // 下
+            result = 'down';
         } else if (angle > 45 && angle < 135) {
-            result = 2;
+            // 上
+            result = 'up';
         } else if ((angle >= 135 && angle <= 180) || (angle >= -180 && angle < -135)) {
+            // 左
             result = 3;
         } else if (angle >= -45 && angle <= 45) {
+            // 右
             result = 4;
+
         }
         return result;
     }
-    
+
     //手指接触屏幕
-    document.addEventListener("touchstart", function(e){
+    document.addEventListener("touchstart", function (e) {
+
         startx = e.touches[0].pageX;
         starty = e.touches[0].pageY;
-        stime=  new Date().getTime();
+        stime = new Date().getTime();
     }, false);
-    
+
     //手指离开屏幕
-    document.addEventListener("touchend", function(e) {
-        var endx, endy,now;
+    document.addEventListener("touchend", function (e) {
+        var endx, endy, now;
         endx = e.changedTouches[0].pageX;
         endy = e.changedTouches[0].pageY;
-        now=new Date().getTime();
-        // alert(now-stime)
-        let disY=Math.abs(endy-starty)
-        let sptime=now-stime
-        alert(disY+' '+sptime)
-        
-        if(sptime>300 && disY<150)
-        return
+        now = new Date().getTime();
+
+        let disY = Math.round(Math.abs(endy - starty))
+        let sptime = now - stime
+        // alert(disY+' time:'+sptime)
+
+        if (sptime > 300 || disY < 150)
+            return
         var direction = getDirection(startx, starty, endx, endy);
 
-         
-      id=ReId.exec(file.src)[0]
-      let index = previewsList.indexOf(id)
-      pid=secureId(index-1)
-      nid=secureId(index+1)
-        
-      nlink='/file/'+nid
-      plink='/file/'+pid
+
+        id = ReId.exec(file.src)[0]
+
+        let index = previewsList.indexOf(id)
+        pid = secureId(index - 1)
+        nid = secureId(index + 1)
 
         switch (direction) {
             // case 0:
             //     alert("点击！");
             //     break;
-            case 1:
-                file.src=plink
+            case 'down':
+                id = nid
                 break;
-            case 2:
-                file.src=nlink
+            case 'up':
+                id = pid
                 break;
-            // case 3:
-            //     alert("向左！");
-            //     break;
-            // case 4:
-            //     alert("向右！");
-            //     break;
-            // default:
-            //     alert("点击！");
-            //     break;
-            }
+        }
+        file.src = '/file/' + id
+        target.href = '/detail/' + id
+        newUrl = window.location.origin + '/play/' + id
+        history.pushState('', '', newUrl);
+
     }, false);
-    // vnode.play()
-    target.href='/detail/'+ReId.exec(file.src)[0]
+
+
 
 }
 //   详情页添加下一个跳转
-if (location.pathname.includes('detail')){
+if (location.pathname.includes('detail')) {
     // 获取文件自动播放 设置id
-    let file=$('.file').children()[0]
-    let tagname=file.tagName
-    if (tagname==='VIDEO' ||tagname==='AUDIO')
-    file.play()
-    
-    file.setAttribute('id','play')
+    let file = $('.file').children()[0]
+    let tagname = file.tagName
+    if (tagname === 'VIDEO' || tagname === 'AUDIO')
+        file.play()
+    file.setAttribute('id', 'play')
+
     // 获取id
-    let id=ReId.exec(location.href)[0]
+    let id = ReId.exec(location.href)[0]
     let index = previewsList.indexOf(id)
-
-    pid=secureId(index-1)
-    nid=secureId(index+1)
-    nlink='/detail/'+nid
-    plink='/detail/'+pid
+    
+    // 链接
+    pid = secureId(index - 1)
+    nid = secureId(index + 1)
+    nlink = '/detail/' + nid
+    plink = '/detail/' + pid
+    // 创建链接
+    function createLink(text, link, class_add = '') {
+        let next = document.createElement('a')
+        next.href = link
+        let btn = document.createElement('button')
+        btn.textContent = text
+        btn.className = "btn btn-large btn-primary " + class_add
+        next.appendChild(btn)
+        return next
+    }
     // 链接嵌套按钮
-    let container=document.createElement('div')
-    let next=document.createElement('a')
-    next.href=nlink
-    let btn=document.createElement('button')
-    btn.textContent='下一个'
-    btn.className="btn btn-large btn-primary"
-    next.appendChild(btn)
+    let container = document.createElement('div')
+    let next = createLink('下一个', nlink)
+
     // 播放完自动下一个
-    if (tagname==='VIDEO' ||tagname==='AUDIO')
-        file.addEventListener('ended',()=>{next.click()})
+    if (tagname === 'VIDEO' || tagname === 'AUDIO')
+        file.addEventListener('ended', () => { next.click() })
 
-    let prev=document.createElement('a')
-    prev.href=plink
-    btn=document.createElement('button')
-     btn.textContent='上一个'
-     btn.className="btn btn-large btn-primary pull-right"
-     prev.appendChild(btn)
+    let prev = createLink('上一个', plink, 'pull-right')
 
-     let tip=document.createElement('span')
-     tip.textContent=index
+    let tip = document.createElement('span')
+    tip.textContent = index
 
+    let play = createLink('play', '/play/' + id)
     container.appendChild(tip)
     container.appendChild(next)
+    container.appendChild(play)
     container.appendChild(prev)
 
-    let insertObj=document.querySelector('.info')
-    insertObj.insertBefore(container,insertObj.children[0])
+    let insertObj = document.querySelector('.info')
+    insertObj.insertBefore(container, insertObj.children[0])
 
     // 定位到文件
-    let locida=document.createElement('a')
-    locida.href='#play'
+    let locida = document.createElement('a')
+    locida.href = '#play'
     locida.click()
 
-      
+
     // 键盘控制下一个
-    window.addEventListener('keydown',(e)=>{
-        switch(e.key){
+    window.addEventListener('keydown', (e) => {
+        switch (e.key) {
             case 'ArrowLeft':
-            prev.click()
-            break;
+                prev.click()
+                break;
             case 'ArrowRight':
-            next.click()
+                next.click()
         }
     })
     // 左右点击下一个
     // document.documentElement.clientWidth
-    $('body').click((e)=>{
-        let clickx=e.screenX
-         if (clickx<200 &&pid)
-         prev.click()
-         if (clickx>1300 &&nid)
-         next.click()
+    $('body')[0].addEventListener('click', (e) => {
+        let clickx = e.screenX
+        if (clickx < 200 && pid)
+            prev.click()
+        if (clickx > 1300 && nid)
+            next.click()
     })
-     
+    // 双击下一个
+    nclickEvent(2, file, () => {
+        next.click()
+    })
+    nclickEvent(2, file, () => {
+        prev.click()
+    })
+    //  鼠标不同隐藏
+    var timer;
+    var tagObj=$('.file')
+    tagObj.mousemove(function () {
+        tagObj.css({
+            cursor: ''
+        });
+        timer = setTimeout(function () {
+            
+            tagObj.css({
+                cursor: 'none'
+            });
+        }, 5000) 
+    });
+
+    // 添加tag链接不跳转
+    $('a.tag').each((index,node)=>{
+        clickAWithColor(node)
+    })
+    // 标题加索引
+    document.title=index+1+' '+document.title
 }
 
 // 按钮 所有查看源文件
-let src_button=document.querySelectorAll('button.src')
-if (src_button[0]){
-  src_button.forEach((ele)=>{
-    ele.addEventListener('click',()=>location.href=ele.dataset.link)
-  }
-  )
-   
+let src_button = document.querySelectorAll('button.src')
+if (src_button[0]) {
+    src_button.forEach((ele) => {
+        ele.addEventListener('click', () => location.href = ele.dataset.link)
+    }
+    )
+
 }
 // 按钮 所有查看源文件
-let play_button=document.querySelectorAll('button.play')
-if (play_button[0]){
-  play_button.forEach((node)=>{
-    node.addEventListener('click',( )=>{
-        let t=location.origin+ node.dataset.link
-        window.location.href=t
-    })
-  }
-  )
-   
+let play_button = document.querySelectorAll('button.play')
+if (play_button[0]) {
+    play_button.forEach((node) => {
+        node.addEventListener('click', () => {
+            let t = location.origin + node.dataset.link
+            window.location.href = t
+        })
+    }
+    )
+
 }
 
- 
+
 // 输入关键词跳转新搜索页面 当前链接后加参数 去旧参数
 // 表单
 let formInput = document.querySelector('#search');
 if (formInput) {
-  // 请求参数写入表单
-  document.addEventListener('DOMContentLoaded', () => {
-      let r = argsGet()
-      if (r.kw) {
-          formInput.value = r.kw
-      }
-  })
-  // 打字结束自动到搜索搜索
-  formInput.addEventListener("compositionend", ()=>location.href = '/?kw=' + formInput.value);
+    // 请求参数写入表单
+    document.addEventListener('DOMContentLoaded', () => {
+        let r = argsGet()
+        if (r.kw) {
+            formInput.value = r.kw
+        }
+    })
+    // 打字结束自动到搜索搜索
+    formInput.addEventListener("compositionend", () => location.href = '/?kw=' + formInput.value);
 }
 
 
@@ -414,15 +476,15 @@ let buttnons = document.querySelectorAll("button.like");
 buttnons.forEach((node) => {
 
     if (node.dataset.like)
-     node.style.backgroundColor = 'red'
+        node.style.backgroundColor = 'red'
     node.addEventListener('click', (e) => {
         e.stopPropagation()
-        let tag=e.target
+        let tag = e.target
         let id = tag.dataset.id
         tag.style.backgroundColor = 'blue'
         if (!id)
             return
-        let url = '/tag/' + id+'?tag=like'
+        let url = '/tag/' + id + '?tag=like'
         fetch(url)
             .then(response => response.json())
             .then(result => {
@@ -433,28 +495,20 @@ buttnons.forEach((node) => {
                 else
                     tag.style.backgroundColor = 'red'
             })
-       
+
     })
 })
 
 //  导航链接激活高亮a 加active 如果href在当前url中
-let links = document.querySelectorAll("a");
-[].forEach.call(links, function (link) {
-    let url = location.pathname + location.search
-    let href = link.pathname + link.search
-    if (url.includes(href)) {
-        if (href === '/' && url === href)
-            link.classList.add("active");
-        else if (href !== '/')
-            link.classList.add("active");
-    }
-    else {
-        let t = link.classList.contains('activate')
-        if (t);
-        link.classList.remove("active");
-    }
+let pname=location.pathname
+$('a.nav-link').each((index,node)=>
+{   if (pname===node.pathname )
+    node.classList.add('active')
+    else if(node.classList.contains('active'))
+    node.classList.remove("active");
 })
 
+ 
 
 // 对象绑定 多击事件
 function nclickEvent(n, dom, fn) {
@@ -503,85 +557,85 @@ function urlGet(node) {
 }
 function downloadfile(url, name) {
     fetch(url).then(res => res.blob()).then(blob => {
-      const a = document.createElement('a');
-      document.body.appendChild(a)
-      a.style.display = 'none'
-      const url = window.URL.createObjectURL(blob);
-      a.href = url;
-      a.download = name;
-      a.click();
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url);
+        const a = document.createElement('a');
+        document.body.appendChild(a)
+        a.style.display = 'none'
+        const url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = name;
+        a.click();
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url);
     });
-  }
+}
 
 
 
-  // 音频链接
+// 音频链接
 let musics = document.querySelectorAll('audio')
-let musicSrcs=[]
-let musicSrcNode={}
-for (let i=0;i<musics.length;i++){
-    musicSrcs[i]=musics[i].src
-    musicSrcNode[musics[i].src]=musics[i]
+let musicSrcs = []
+let musicSrcNode = {}
+for (let i = 0; i < musics.length; i++) {
+    musicSrcs[i] = musics[i].src
+    musicSrcNode[musics[i].src] = musics[i]
 }
 // 添加音乐播放器
-if (musics.length>0){
-  let container=document.createElement('div')
+if (musics.length > 0) {
+    let container = document.createElement('div')
 
-  let display_audio=document.createElement('audio')
-  display_audio.src=musics[0].src
-  display_audio.setAttribute('controls',true)
+    let display_audio = document.createElement('audio')
+    display_audio.src = musics[0].src
+    display_audio.setAttribute('controls', true)
 
-  let playNext=document.createElement('button')
-  playNext.textContent='下一首'
-  let downAll=document.createElement('button')
-  downAll.textContent='下载所有'
+    let playNext = document.createElement('button')
+    playNext.textContent = '下一首'
+    let downAll = document.createElement('button')
+    downAll.textContent = '下载所有'
 
-  let tipNow=document.createElement('span')
-  tipNow.textContent='1.正在播放 '+musics[0].dataset.desc
+    let tipNow = document.createElement('span')
+    tipNow.textContent = '1.正在播放 ' + musics[0].dataset.desc
 
-  container.appendChild(display_audio)
-  container.appendChild(playNext)
-  container.appendChild(downAll)
-  container.appendChild(tipNow)
-  let insertObj=document.querySelector('.post-tabs')
-  insertObj.insertBefore(container,insertObj.children[0])
-  // row.insertBefore(audio,row.children[0])
+    container.appendChild(display_audio)
+    container.appendChild(playNext)
+    container.appendChild(downAll)
+    container.appendChild(tipNow)
+    let insertObj = document.querySelector('.post-tabs')
+    insertObj.insertBefore(container, insertObj.children[0])
+    // row.insertBefore(audio,row.children[0])
 
-  function PlayAudio(node){
-      display_audio.src=node.src
-      let index=musicSrcs.indexOf(display_audio.src)
-    tipNow.textContent=index+':'+node.dataset.desc 
-    display_audio.play()
-  }
-//   点击项目播放
-  musics.forEach((node) =>   {
-    $(node.parentNode).click(()=>{
-        PlayAudio(node)
+    function PlayAudio(node) {
+        display_audio.src = node.src
+        let index = musicSrcs.indexOf(display_audio.src)
+        tipNow.textContent = index + ':' + node.dataset.desc
+        display_audio.play()
+    }
+    //   点击项目播放
+    musics.forEach((node) => {
+        $(node.parentNode).click(() => {
+            PlayAudio(node)
+        })
     })
-  })
-//   播放下一首
-  playNext.addEventListener('click',(e)=>{
-    let index=musicSrcs.indexOf(display_audio.src)
-    index=index+1
-    if (index===musicSrcs.length)
-    index=0
-    PlayAudio(musicSrcNode[musicSrcs[index]])
-   
-  })
+    //   播放下一首
+    playNext.addEventListener('click', (e) => {
+        let index = musicSrcs.indexOf(display_audio.src)
+        index = index + 1
+        if (index === musicSrcs.length)
+            index = 0
+        PlayAudio(musicSrcNode[musicSrcs[index]])
 
-//   下载所有
-  $(downAll).click(()=>{
-    alert('下载所有')
-    musics.forEach((node) =>   {
-        var name = node.dataset.desc
-        var src = window.location.origin + node.getAttribute('src')  
-        downloadfile(src, name)
-        //  this.downloadMp3('/api/musics?music_id=1',name);
-  
-      })
-  })
+    })
+
+    //   下载所有
+    $(downAll).click(() => {
+        alert('下载所有')
+        musics.forEach((node) => {
+            var name = node.dataset.desc
+            var src = window.location.origin + node.getAttribute('src')
+            downloadfile(src, name)
+            //  this.downloadMp3('/api/musics?music_id=1',name);
+
+        })
+    })
 }
 
 // 检测到音频触发
@@ -601,7 +655,7 @@ if (musics.length>0){
 //     audios.forEach((i) => {
 //       i.addEventListener("play", pauseAllOther);
 //       i.addEventListener('play', showTips);
-  
+
 //       i.addEventListener('pause', (e) => lastPausePlay = e.target);
 //     })
 //     // 功能按钮
@@ -700,14 +754,14 @@ if (musics.length>0){
 
 function downloadfile(url, name) {
     fetch(url).then(res => res.blob()).then(blob => {
-      const a = document.createElement('a');
-      document.body.appendChild(a)
-      a.style.display = 'none'
-      const url = window.URL.createObjectURL(blob);
-      a.href = url;
-      a.download = name;
-      a.click();
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url);
+        const a = document.createElement('a');
+        document.body.appendChild(a)
+        a.style.display = 'none'
+        const url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = name;
+        a.click();
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url);
     });
-  }
+}

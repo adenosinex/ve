@@ -3,6 +3,7 @@
 #     os,Path
  
 from datetime import datetime
+from itertools import count
 from sqlalchemy import and_,or_,case,distinct,or_,func
 # from sqlalchemy.orm import or_
 from factory import db,who
@@ -19,6 +20,7 @@ class File(db.Model):
     type=db.Column(db.String,nullable=False)
     path=db.Column(db.String,nullable=False)
     dir=db.Column(db.String,nullable=False)
+    ctime=db.Column(db.String,default=datetime.datetime.now)
     tag=db.relationship('Tag', backref='file',uselist=False)  # 反向引用
      # 小说高频词
     kw=db.Column(db.String,nullable=False)
@@ -68,7 +70,7 @@ class Tag(db.Model):
     id=db.Column(db.String,db.ForeignKey(File.id),primary_key=True)
     like=db.Column(db.Boolean)
     tag=db.Column(db.String)
-    utime=db.Column(db.String)
+    utime=db.Column(db.String,default=datetime.datetime.now)
    
   
 class Dir(db.Model):
@@ -83,7 +85,7 @@ class Log(db.Model):
     id=db.Column(db.Integer ,primary_key=True)
     url=db.Column(db.String)
     is_top=db.Column(db.Boolean)
-    utime=db.Column(db.DateTime, default=datetime.now, index=True)
+    utime=db.Column(db.DateTime, default=datetime.datetime.now, index=True)
  
 
 def multi_ruledb( sentens, most=False):
@@ -141,13 +143,42 @@ class InitData:
 
     def ana_dyname(self):
          # 使用作者发布信息为名
-        t=Db_Mani(r'X:/库/code/douyin get/data-dy.db').query('select id,desc from raw')
-        data={i[0]:i[1] for i in t}
-        files=db.session.query(File).filter_by(dir='X:\库\视频\dy like').all()
-        def f(i):
-            i.name=data.get(Path(i.path).stem)
-            return i
-        [f(i) for i in files if data.get(Path(i.path).stem)]
+        def func_rec():
+            t=Db_Mani(r'X:/库/code/douyin get/data-dy.db').query('select id,desc,ctime from raw')
+            data={i[0]:[i[1],i[2]] for i in t}
+            files=db.session.query(File).filter_by(dir='X:\库\视频\dy like').all()
+            def f(i):
+                if not data.get(Path(i.path).stem):
+                    return
+               
+                # i.name,ctime=data.get(Path(i.path).stem)
+                # i.ctime=datetime.datetime.fromtimestamp(int(ctime))
+                if i.name!=Path(i.path).stem:
+                    i.name,ctime=data.get(Path(i.path).stem)
+                    i.ctime=datetime.datetime.fromtimestamp(int(ctime))
+                pass
+                
+            multi_threadpool(func=f,args=files)
+            
+        def func_old():
+            t=Db_Mani(r'X:/库/dyvideo.db')
+            sql='select videos.id,videos.desc,authors.nickname,videos.ctime  from videos,authors,heart where videos.id=heart.id and videos.aid=authors.uid'
+            a='@林南学姐· '
+            rdata=t.query(sql)
+            data={i[0]:[f'@{i[2]}·{i[1]}',i[3] ]for i in rdata}
+
+            files=db.session.query(File).filter_by(dir=r'X:\库\DyView\view like').all()
+            c=count(1)
+            def f(i):
+                if data.get(Path(i.path).stem):
+                    i.name,ctime=data.get(Path(i.path).stem)
+                    i.ctime=datetime.fromtimestamp(int(ctime)) 
+                    if next(c)%100==0:
+                        db.session.commit()
+                    return i
+            # [f(i) for i in files ]
+            multi_threadpool(func=f,args=files)
+        func_rec()
         db.session.commit()
 
     def ana_txt(self):
@@ -175,14 +206,13 @@ class InitData:
         multi_threadpool(func=f,args=db.session.query(File).filter_by(num=None ).all(),desc='提取数字')
         db.session.commit()
 
-    def create_small_file(self):
+    def create_small_file(self ):
         # 生辰缺少的缩略图
         ids={Path(i).stem for i in get_files(self.smallfiles_path)}
-        
         r=db.session.query(File ).filter(or_(File.type=='video',File.type=='img')).filter(File.id.notin_(ids))
         def f(i):
              self._small_file(i.path,i.id,i.type)
-        multi_threadpool(func=f,args=r,desc='生成缩略图 gif',pool_size=6)
+        multi_threadpool(func=f,args=r,desc='生成缩略图 gif',pool_size=4 )
 
     def init_file(self,file_path):
         # 初始化数据
@@ -199,7 +229,7 @@ class InitData:
         files=set(files).difference(old_files)
         t=db.session.query(File).count()
         # 文件数据
-        multi_threadpool(func=self._index_file,args=files,desc='数据初始化')
+        multi_threadpool(func=self._index_file,args=files,desc='数据初始化-{}'.format(Path(file_path).name))
         mes1='数据库数据：{}'.format(db.session.query(File).count()-t)
         print(mes1)
         return mes1
@@ -258,7 +288,12 @@ class InitData:
              
         db.session.commit()
 
-
+    def reindex_dir(self,app):
+        # 重索引文件 应对新增文件 修改文件名
+        dirs=db.session.query(Dir.path).filter_by(rank=1).all()
+        dir=[i[0] for i in dirs if not '图文数据' in i[0]]
+        self.scan_dir(dir,app)
+        
     def scan_dir(self,p,app):
         with app.app_context():
             if isinstance(p,list):
@@ -270,7 +305,7 @@ class InitData:
                     # 初始化新文件夹
                     self.init_file(p)
             #  生成缩略图
-            self.dir_rank()
+            self.init_dir()
             self.create_small_file()
 
         

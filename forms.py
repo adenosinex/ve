@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileRequired,FileField
 from wtforms import StringField, TextAreaField, BooleanField, SelectField,\
     SubmitField
-from wtforms.validators import DataRequired, Length, Email, Regexp
+from wtforms.validators import DataRequired, Length, Email, Regexp 
 
 
  
@@ -21,3 +22,8 @@ class TagForm(FlaskForm):
 class AddDirForm(FlaskForm):
     path = StringField('路径逗号分隔', validators=[DataRequired()])
     submit = SubmitField('确定' )
+
+class UpFile(FlaskForm):
+   
+    file=FileField(label='文件',validators=[FileRequired()],render_kw={'multiple':True} )
+    submit=SubmitField( '提交' )

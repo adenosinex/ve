@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block page_content %}
+ 
+<form method="post" enctype="multipart/form-data"  >
+    {{form.csrf_token}}
+    {{form.file.label}}
+    {{form.file() }}
+    {{form.submit(class='btn btn-large btn-primary')}}
+     
+   </form>
+
+   {% for post in posts %}
+    {{post.index}}: {{post.vsize}} <a href="/share/{{post.name}}" download="{{post.name}}">{{post.name}}</a>
+        <br>
+        <br>
+   {% endfor %}
+   {{now}}
+ 
+{% endblock %}
