@@ -314,6 +314,19 @@ if (location.pathname.includes('play')) {
 
 
 }
+var timer;
+var tagObj=$('video')
+tagObj.mousemove(function () {
+    tagObj.css({
+        cursor: ''
+    });
+    timer = setTimeout(function () {
+        
+        tagObj.css({
+            cursor: 'none'
+        });
+    }, 2000) 
+});
 //   详情页添加下一个跳转
 if (location.pathname.includes('detail')) {
     // 获取文件自动播放 设置id
@@ -396,20 +409,20 @@ if (location.pathname.includes('detail')) {
     nclickEvent(2, file, () => {
         prev.click()
     })
-    //  鼠标不同隐藏
-    var timer;
-    var tagObj=$('.file')
-    tagObj.mousemove(function () {
-        tagObj.css({
-            cursor: ''
-        });
-        timer = setTimeout(function () {
+    //  鼠标自动隐藏
+    // var timer;
+    // var tagObj=$('.file')
+    // tagObj.mousemove(function () {
+    //     tagObj.css({
+    //         cursor: ''
+    //     });
+    //     timer = setTimeout(function () {
             
-            tagObj.css({
-                cursor: 'none'
-            });
-        }, 5000) 
-    });
+    //         tagObj.css({
+    //             cursor: 'none'
+    //         });
+    //     }, 2000) 
+    // });
 
     // 添加tag链接不跳转
     $('a.tag').each((index,node)=>{

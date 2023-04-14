@@ -5,14 +5,14 @@ from flask import render_template,request,Response,abort,url_for ,session,redire
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask,current_app
-from flask_whooshee import Whooshee
+# from flask_whooshee import Whooshee
 # from models import *
 from config import config
 # from flask_cors import CORS
 
 db=SQLAlchemy()
 bt=Bootstrap()
-who=Whooshee()
+# who=Whooshee()
 
 def creat_app(config_name='dev'):
     app=Flask(__name__)
@@ -20,7 +20,7 @@ def creat_app(config_name='dev'):
     app.config.from_object(config[config_name])
     db.init_app(app)
     bt.init_app(app)
-    who.init_app(app)
+    # who.init_app(app)
     
     # 注册蓝本
     from blueprint_api import api_bp

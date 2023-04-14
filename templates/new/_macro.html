@@ -1,11 +1,53 @@
 {% macro thumbnail(post)%}
-
-{% if post.type=='img' %}
-<img src={{ url_for('api_bp.static',filename='{}.jpg' .format(post.id))}} alt="{{post.naem}}">
-    {% elif post.type=='video' %}
-    <img src={{ url_for('api_bp.static',filename='{}.gif' .format(post.id))}} alt="{{post.naem}}">
-    {% endif %}
-<div class="overlay">
-    <div class="overlay-text">{{post.name}}</div>
+<div class="image-container">
+    {% if post.type=='img' %}
+    <img src={{ url_for('api_bp.static',filename='{}.jpg' .format(post.id))}} id="{{post.id}}">
+        {% elif post.type=='video' %}
+        <img src={{ url_for('api_bp.static',filename='{}.gif' .format(post.id))}}  id="{{post.id}}">
+        {% endif %}
+    <video controls preload="metadata" style="display: none;"    >
+        <source src="" type="video/mp4"  >
+    </video>
+    <p class="image-date">{{post.ctime}}</p>
 </div>
+<div class="caption">
+    <a href="/detail/{{post.id}}">
+        <p class="image-title" title="{{post.name}}">{{post.name}}</p>
+
+    </a>
+</div>
+
 {% endmacro %}
+
+{% macro pages(pagination, endpoint,kwargs=dict()) -%}
+<div class="pagination">
+<!-- 上一页 -->
+    <a href="{% if pagination.has_prev %}{{ url_for(endpoint, pn=pagination.prev_num, **kwargs) }}{% else %}#{% endif %} " class="page-link">
+        &laquo;
+    </a>
+ 
+<!-- 中间页 -->
+{% for p in pagination.iter_pages()  %}
+    {% if p %}
+        {% if p == pagination.page %}
+       
+            <a href="{{ url_for(endpoint, pn = p, **kwargs) }}" class="active page-link" >{{ p }}</a>
+         
+        {% else %}
+        
+            <a href="{{ url_for(endpoint, pn = p, **kwargs) }}" class="  page-link" >{{ p }}</a>
+        
+        {% endif %}
+    {% else %}
+    <a href="#" class="  page-link" >&hellip;</a> 
+    {% endif %}
+
+{% endfor %}
+<!-- 下一页 -->
+ 
+    <a href="{% if pagination.has_next %}{{ url_for(endpoint, pn=pagination.next_num, **kwargs) }} {% else %}#{% endif %} " class="page-link">
+        &raquo;
+    </a>
+ 
+</div>
+{%- endmacro %}

@@ -559,14 +559,41 @@ def thread_back(func,app):
     a.daemon=True
     a.start()
 
-def f():
-    p=r"C:\Users\Zin\Documents\testdata\mixdata\like hd -img\Antelope Canyon.jpg"
-    t=r'C:\Users\Zin\Documents\testdata\t'
+class SmallFile:
+    def thumbnail(self,file,img):
+        # 缩略图
+        if os.path.exists(img):
+            return
+        try:
+            im=Image.open(file)
+            im.thumbnail((1080,1080))
+            im=im.convert('RGB')
+            im.save(img,'JPEG')
+        except:
+            return
+
+    def shot_gif(self,src,dst,ss_rat=0.2 ,t=1):
+        # ss_rat 开始时间 百分比 归一 
+        # 时间
+        # ffprobe -i a.gif -show_entries format=duration -v quiet -of csv="p=0"
+        exe=r'X:\bufferx\OneDrive\应用\module\ffmpeg\ffmpeg.exe'
+        prob=r'X:\bufferx\OneDrive\应用\module\ffmpeg\ffprobe.exe'
     
- 
+        ss_cmd=f' "{prob}" -i "{src}" -show_entries format=duration -v quiet -of csv="p=0" '
+        output = subprocess.Popen(ss_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,text=True)
+        out, err = output.communicate()
+        ss=int(re.findall('\d+',out)[0])*ss_rat
+        r=subprocess.Popen([exe,'-y','-ss',str(ss),'-t','1' ,'-i',str(src),'-r','15','-vf','scale=-1:360',str(dst) ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pass
+
+def f():
+    src=r"X:\库\视频\dy like\7214442324271713571.mp4"
+    dst=r'C:\Users\Zin\Videos\Captures\a.gif'
+    shot_gif(src,dst,  )
     print('end')
      
     # VideoM().shot_gif(i,base.joinpath(Path(i).name).with_suffix('.gif'),t='20%' )
     
-
+# 
+VideoM.thumbnail
 # f()

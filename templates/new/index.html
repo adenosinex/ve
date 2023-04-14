@@ -1,84 +1,93 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>图片展示</title>
-	<style>
-		body {
-			margin: 0;
-			padding: 0;
-			background-color: #f2f2f2;
-		}
-		h1 {
-			text-align: center;
-			font-size: 36px;
-			margin-top: 50px;
-		}
-		.container {
-			max-width: 1200px;
-			margin: 0 auto;
-			display: flex;
-			flex-wrap: wrap;
-			justify-content: space-around;
-			align-items: center;
-			margin-top: 50px;
-			margin-bottom: 50px;
-		}
-		.item {
-			width: 23%;
-			margin: 5px;
-			box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-			overflow: hidden;
-			border-radius: 5px;
-			position: relative;
-			cursor: pointer;
-		}
-		img {
-			width: 100%;
-			height: auto;
-			vertical-align: middle;
-			border-style: none;
-		}
-		.overlay {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background-color: rgba(0,0,0,0.4);
-			color: white;
-			text-align: center;
-			padding-top: 40%;
-			opacity: 0;
-			transition: opacity 0.3s ease-in-out;
-		}
-		.item:hover .overlay {
-			opacity: 1;
-		}
-		.overlay-text {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-		}
-	</style>
-</head>
+{% extends "new/base.html" %}
 
-<body>
-	<h1>图片展示</h1>
-    {% import "new/_macro.html" as macro %}
 
-	<div class="container">
-        {% for post in posts %}
-                {{ element|e }}
-                <div class="item">
-                    
-                    {{ macro.thumbnail(post) }}
-                    
-                </div>
-        {% endfor %}
+{% block main %}
+{% import "new/_macro.html" as macro %}
+<div class="container">
+    {% for post in posts %}
+    <div class="item-container">
+        {{ macro.thumbnail(post) }}
+    </div>
+    {% endfor %}
+</div>
+{{ macro.pages(pagination, endpoint,kwargs=kwargs_page) }}
+
+<script>
+    // 图片点击替换成播放视频
+    let lastPlayVideo;
+    function clickPlay(node,index) {
+        const thumbnail = node.querySelector('img');
+        const video = node.querySelector('video');
+        // 替换视频
+        thumbnail.addEventListener('click', function () {
+            video.src = '/file/' + thumbnail.id;
+            video.style.display = 'block';
+            video.controls = true;
+            thumbnail.style.display = 'none'
+            if (lastPlayVideo && !lastPlayVideo.paused)
+                lastPlayVideo.pause()
+            video.play();
+            lastPlayVideo = video;
+            currentNodeIndex=index
+        });
+        // 唯一视频播放
+        video.addEventListener('click', (event) => {
+            if (lastPlayVideo === video)
+                return
+            if (lastPlayVideo && !lastPlayVideo.paused)
+                lastPlayVideo.pause()
+            lastPlayVideo = video;
+            currentNodeIndex=index
+        })
+
         
-		 
-	</div>
-</body>
-</html>
+       
+  }
+    const items = document.querySelectorAll('.item-container');
+    for (let i = 0; i < items.length; i++) {
+        // items[i].addEventListener('click', clickPlay);
+        clickPlay(items[i],i)
+    }
+        
+var currentNodeIndex = -1;
+ 
+        // 监听页面上的keydown事件
+document.addEventListener('keydown', function(event) {
+    let rows=Math.floor(items[0].parentElement.getBoundingClientRect().width/items[0].getBoundingClientRect().width)
+  switch(event.key) {
+    case 'ArrowLeft': // 左箭头
+    currentNodeIndex--;
+    break;
+    case 'ArrowRight': // 右箭头
+    currentNodeIndex++;
+      break;
+    case 'ArrowUp': // 上箭头
+    // 减一行个数
+    currentNodeIndex-=rows;
+    break;
+    case 'ArrowDown': // 下箭头
+    currentNodeIndex+=rows;
+      break;
+    default:
+        return
+    }
+    clickNodeAtIndex(currentNodeIndex);
+});
+
+
+
+// 点击指定索引的节点
+function clickNodeAtIndex(index) {
+    if(index>=items.length)
+    index=0
+    else if(index<0)
+    index=items.length-1
+// 触发出现视频，点击视频
+  items[index].querySelector('img').click();
+  items[index].querySelector('video').click();
+  items[index].scrollIntoView({ behavior:     'auto' });
+}
+
+
+</script>
+{% endblock %}

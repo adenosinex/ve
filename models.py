@@ -6,13 +6,13 @@ from datetime import datetime
 from itertools import count
 from sqlalchemy import and_,or_,case,distinct,or_,func
 # from sqlalchemy.orm import or_
-from factory import db,who
+from factory import db 
 from flask import current_app as app
 import time,re
  
 from tools import *
 
-@who.register_model('name', 'path' )
+# @who.register_model('name', 'path' )
 class File(db.Model):
     id=db.Column(db.String,primary_key=True)
     name=db.Column(db.String,nullable=False)
@@ -111,15 +111,8 @@ class InitData:
         self.files_path=app.config.get('FILE_PATH')
         self.smallfiles_path=app.config.get('SMALL_FILE_PATH')
 
-    def _small_file(self,file,id,type):
-        # 文件缩小化
-        p=''
-        if type=='video':
-            p=self.smallfiles_path+'/{}.gif'.format(id)
-            VideoM().shot_gif(file,p,t='20%')
-        elif type=='img':
-            p=self.smallfiles_path+'/{}.jpg'.format(id)
-            VideoM().thumbnail(file,p)
+ 
+       
 
     def _index_file(self,file):
         # 文件索引
@@ -127,8 +120,7 @@ class InitData:
         # 已经存在跳过 路劲不一样更新路径
         old_entry=File.query.filter_by(id=id).first()
         file_type=FileType_().media_type(file)
-        # 缩略图
-        # self._small_file(file,id,file_type)
+        
         if  old_entry :
             if old_entry.path!=file:
                 old_entry.path=file
@@ -146,14 +138,14 @@ class InitData:
         def func_rec():
             t=Db_Mani(r'X:/库/code/douyin get/data-dy.db').query('select id,desc,ctime from raw')
             data={i[0]:[i[1],i[2]] for i in t}
-            files=db.session.query(File).filter_by(dir='X:\库\视频\dy like').all()
+            files=db.session.query(File).filter (File.dir.like(r'%X:\库\视频\dy like%')).all()
             def f(i):
                 if not data.get(Path(i.path).stem):
                     return
                
                 # i.name,ctime=data.get(Path(i.path).stem)
                 # i.ctime=datetime.datetime.fromtimestamp(int(ctime))
-                if i.name!=Path(i.path).stem:
+                if i.name==Path(i.path).name:
                     i.name,ctime=data.get(Path(i.path).stem)
                     i.ctime=datetime.datetime.fromtimestamp(int(ctime))
                 pass
@@ -211,7 +203,13 @@ class InitData:
         ids={Path(i).stem for i in get_files(self.smallfiles_path)}
         r=db.session.query(File ).filter(or_(File.type=='video',File.type=='img')).filter(File.id.notin_(ids))
         def f(i):
-             self._small_file(i.path,i.id,i.type)
+            if i.type=='video':
+                p=self.smallfiles_path+'/{}.gif'.format(i.id)
+                SmallFile().shot_gif(i.path,p )
+            elif i.type=='img':
+                p=self.smallfiles_path+'/{}.jpg'.format(i.id)
+                SmallFile().thumbnail(i.path,p)
+              
         multi_threadpool(func=f,args=r,desc='生成缩略图 gif',pool_size=4 )
 
     def init_file(self,file_path):
@@ -294,18 +292,18 @@ class InitData:
         dir=[i[0] for i in dirs if not '图文数据' in i[0]]
         self.scan_dir(dir,app)
         
-    def scan_dir(self,p,app):
-        with app.app_context():
-            if isinstance(p,list):
-                for i in p:
-                    # 初始化新文件夹
-                    self.init_file(i)
-                
-            else:
-                    # 初始化新文件夹
-                    self.init_file(p)
-            #  生成缩略图
-            self.init_dir()
-            self.create_small_file()
+    def scan_dir(self,p  ):
+         
+        if isinstance(p,list):
+            for i in p:
+                # 初始化新文件夹
+                self.init_file(i)
+            
+        else:
+                # 初始化新文件夹
+                self.init_file(p)
+        #  生成缩略图
+        self.init_dir()
+        self.create_small_file()
 
         

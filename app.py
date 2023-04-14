@@ -17,11 +17,9 @@ with app.app_context():
         db.create_all()  
         File
         # InitData().ana_dyname()
-        # InitData().scan_dir(r'X:\库\视频\dy like',app)
+        # InitData().scan_dir(r'X:\库\视频\dy like' )
  
- 
-        
- 
+
 with app.test_request_context('/' ):
         assert request.path == '/'
 
