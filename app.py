@@ -299,7 +299,7 @@ def share( ):
         return t
     posts=[f(i) for i in get_files(p)]
     data={
-        'now':datetime.now(),
+        'now':datetime.datetime.now(),
         'form':form,
         'posts':posts
     }
