@@ -66,6 +66,7 @@ def tag_file(id):
     if item:
         if tag=='like':
             r=item.set_like()
+            return jsonify({'status':'ok'})
         else:
             r=item.set_tag(tag)
         return redirect(request.referrer)

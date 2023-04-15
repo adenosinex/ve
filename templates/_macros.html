@@ -57,7 +57,9 @@
             <a href='/detail/{{post.id}}'>
               <button type="button" class="btn btn-sm btn-outline-secondary src" >View</button>
             </a>
-            <button type="button" class="btn btn-sm btn-outline-secondary like  {%if post.is_like %} is_like {%endif%}"  data-id={{post.id}} data-like="{{post.like}}" >like</button>
+            <a href='/tag/{{post.id}}?tag=like' class='sendLike  {%if post.is_like %}  like {%endif%}'>
+            <button type="button" class="btn btn-sm btn-outline-secondary "  >like</button>
+            </a>
             <a href='/play/{{post.id}}'>
               <button type="button" class="btn btn-sm btn-outline-secondary  play"   >play</button>
             </a>

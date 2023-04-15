@@ -239,7 +239,7 @@ def item_vis(item):
     if '水果派' in item.path:
         item.suffix='img'
     if item.tag and item.tag.like:
-        item.like=True
+        item.is_like=True
 
     return item
 

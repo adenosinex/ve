@@ -133,19 +133,22 @@ function secureId(index) {
 
 // axios part
 // 链接发送后台请求 变色 点击红 成功绿 失败白
-function clickAWithColor(node){
-    node.addEventListener('click',(e)=>{
-        e.preventDefault()
-        let node=e.target
-        node.style.backgroundColor='red'
+function clickAWithColor(node, funcSuccess = (response) => true) {
+    node.addEventListener('click', (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+         
+        node.style.backgroundColor = 'red'
         axios.get(node.href)
-        .then(function (response) {
-            node.style.backgroundColor='green'
-        })
-        .catch(function (error) {
-            node.style.backgroundColor='white'
-        })}
-        )
+            .then(function (response) {
+                if (funcSuccess(response))
+                    node.style.backgroundColor = 'green'
+            })
+            .catch(function (error) {
+                node.style.backgroundColor = 'white'
+            })
+    }
+    )
 }
 // axios.interceptors.response.use(
 //     function (response) {
@@ -315,17 +318,17 @@ if (location.pathname.includes('play')) {
 
 }
 var timer;
-var tagObj=$('video')
+var tagObj = $('video')
 tagObj.mousemove(function () {
     tagObj.css({
         cursor: ''
     });
     timer = setTimeout(function () {
-        
+
         tagObj.css({
             cursor: 'none'
         });
-    }, 2000) 
+    }, 2000)
 });
 //   详情页添加下一个跳转
 if (location.pathname.includes('detail')) {
@@ -339,7 +342,7 @@ if (location.pathname.includes('detail')) {
     // 获取id
     let id = ReId.exec(location.href)[0]
     let index = previewsList.indexOf(id)
-    
+
     // 链接
     pid = secureId(index - 1)
     nid = secureId(index + 1)
@@ -417,7 +420,7 @@ if (location.pathname.includes('detail')) {
     //         cursor: ''
     //     });
     //     timer = setTimeout(function () {
-            
+
     //         tagObj.css({
     //             cursor: 'none'
     //         });
@@ -425,11 +428,11 @@ if (location.pathname.includes('detail')) {
     // });
 
     // 添加tag链接不跳转
-    $('a.tag').each((index,node)=>{
+    $('a.tag').each((index, node) => {
         clickAWithColor(node)
     })
     // 标题加索引
-    document.title=index+1+' '+document.title
+    document.title = index + 1 + ' ' + document.title
 }
 
 // 按钮 所有查看源文件
@@ -485,43 +488,24 @@ function argsGet(url) {
 
 
 // 按钮 喜欢操作 get请求
-let buttnons = document.querySelectorAll("button.like");
-buttnons.forEach((node) => {
-
-    if (node.dataset.like)
-        node.style.backgroundColor = 'red'
-    node.addEventListener('click', (e) => {
-        e.stopPropagation()
-        let tag = e.target
-        let id = tag.dataset.id
-        tag.style.backgroundColor = 'blue'
-        if (!id)
-            return
-        let url = '/tag/' + id + '?tag=like'
-        fetch(url)
-            .then(response => response.json())
-            .then(result => {
-                // 返回值处理 变色链接
-                let rtext = JSON.stringify(result);
-                if (rtext.includes('删除'))
-                    tag.style.backgroundColor = 'white'
-                else
-                    tag.style.backgroundColor = 'red'
-            })
-
+let likeELements = document.querySelectorAll(".sendLike");
+clickAWithColor
+likeELements.forEach((node) => {
+    clickAWithColor(node)
     })
-})
+
+
 
 //  导航链接激活高亮a 加active 如果href在当前url中
-let pname=location.pathname
-$('a.nav-link').each((index,node)=>
-{   if (pname===node.pathname )
-    node.classList.add('active')
-    else if(node.classList.contains('active'))
-    node.classList.remove("active");
+let pname = location.pathname
+$('a.nav-link').each((index, node) => {
+    if (pname === node.pathname)
+        node.classList.add('active')
+    else if (node.classList.contains('active'))
+        node.classList.remove("active");
 })
 
- 
+
 
 // 对象绑定 多击事件
 function nclickEvent(n, dom, fn) {
@@ -620,6 +604,7 @@ if (musics.length > 0) {
         display_audio.src = node.src
         let index = musicSrcs.indexOf(display_audio.src)
         tipNow.textContent = index + ':' + node.dataset.desc
+        document.title = index + ':' + node.dataset.desc
         display_audio.play()
     }
     //   点击项目播放
@@ -628,6 +613,11 @@ if (musics.length > 0) {
             PlayAudio(node)
         })
     })
+    // 获取当前item
+    function nowItem() {
+        let index = musicSrcs.indexOf(display_audio.src)
+        return musicSrcNode[musicSrcs[index]].parentElement.parentElement
+    }
     //   播放下一首
     playNext.addEventListener('click', (e) => {
         let index = musicSrcs.indexOf(display_audio.src)
@@ -636,6 +626,16 @@ if (musics.length > 0) {
             index = 0
         PlayAudio(musicSrcNode[musicSrcs[index]])
 
+    })
+    // 自动下一首
+    display_audio.addEventListener('ended', () => {
+        playNext.click()
+    })
+    // 点击定位元素
+    tipNow.addEventListener('click', () => {
+        let node = nowItem()
+        node.scrollIntoView({ behavior: 'auto' })
+        node.style.backgroundColor = 'red'
     })
 
     //   下载所有
