@@ -36,12 +36,10 @@
     <div class="card shadow-sm">
     <!-- 图片 -->
     
-    {% if post.type=='img' or post.suffix=='img'%}
-    <img src={{ url_for('api_bp.static',filename='{}.jpg'.format(post.id))}} class="img-responsive center-block " data-link="/detail/{{post.id}}" data-id="{{post.id}}" >
-    {% elif post.type=='video' %}
-    <img src={{ url_for('api_bp.static',filename='{}.gif'.format(post.id))}} class="img-responsive center-block " data-link="/detail/{{post.id}}" data-id="{{post.id}}">
-    {% elif post.type=='music' %}  
+    {% if post.type=='music'%}
     <audio src="/file/{{post.id}}" data-desc= "{{post.name}}"  class="img-responsive center-block "  data-link="/detail/{{post.id}}" data-id="{{post.id}}"  ></audio>
+    {% else %}  
+    <img src={{ url_for('api_bp.static',filename=post.hashname) }} class="img-responsive center-block " data-link="/detail/{{post.id}}" data-id="{{post.id}}">
     {%endif%}
  
       <div class="card-body">

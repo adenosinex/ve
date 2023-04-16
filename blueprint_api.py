@@ -40,6 +40,14 @@ def src_file(id):
         return 'error'
     # 分类返回对象
     p=item.path
+
+    if app.config.get('IS_PRO'):
+        if item.file2:
+            p=item.file2.path
+        else:
+            return 'not exists'
+    if not os.path.exists(p):
+        return 'not exists'
     # 下载直接读取返回
     if request.args.get('down'):
         return Response( open(p,'rb').read(),content_type='application/octet-stream')

@@ -15,7 +15,7 @@
 <script>
     // 图片点击替换成播放视频
     let lastPlayVideo;
-    function clickPlay(node,index) {
+    function clickPlay(node, index) {
         const thumbnail = node.querySelector('img');
         const video = node.querySelector('video');
         // 替换视频
@@ -28,7 +28,7 @@
                 lastPlayVideo.pause()
             video.play();
             lastPlayVideo = video;
-            currentNodeIndex=index
+            currentNodeIndex = index
         });
         // 唯一视频播放
         video.addEventListener('click', (event) => {
@@ -37,57 +37,59 @@
             if (lastPlayVideo && !lastPlayVideo.paused)
                 lastPlayVideo.pause()
             lastPlayVideo = video;
-            currentNodeIndex=index
+            currentNodeIndex = index
         })
 
-        
-       
-  }
+
+
+    }
     const items = document.querySelectorAll('.item-container');
     for (let i = 0; i < items.length; i++) {
         // items[i].addEventListener('click', clickPlay);
-        clickPlay(items[i],i)
+        clickPlay(items[i], i)
     }
-        
-var currentNodeIndex = -1;
- 
-        // 监听页面上的keydown事件
-document.addEventListener('keydown', function(event) {
-    let rows=Math.floor(items[0].parentElement.getBoundingClientRect().width/items[0].getBoundingClientRect().width)
-  switch(event.key) {
-    case 'ArrowLeft': // 左箭头
-    currentNodeIndex--;
-    break;
-    case 'ArrowRight': // 右箭头
-    currentNodeIndex++;
-      break;
-    case 'ArrowUp': // 上箭头
-    // 减一行个数
-    currentNodeIndex-=rows;
-    break;
-    case 'ArrowDown': // 下箭头
-    currentNodeIndex+=rows;
-      break;
-    default:
-        return
+
+    var currentNodeIndex = -1;
+
+    // 监听页面上的keydown事件
+    document.addEventListener('keydown', function (event) {
+        let rows = Math.floor(items[0].parentElement.getBoundingClientRect().width / items[0].getBoundingClientRect().width)
+        switch (event.key) {
+            case 'ArrowLeft': // 左箭头
+                currentNodeIndex--;
+                break;
+            case 'ArrowRight': // 右箭头
+                currentNodeIndex++;
+                break;
+            case 'ArrowUp': // 上箭头
+                // 减一行个数
+                currentNodeIndex -= rows;
+                break;
+            case 'ArrowDown': // 下箭头
+                currentNodeIndex += rows;
+                break;
+            default:
+                return
+        }
+        clickNodeAtIndex(currentNodeIndex);
+    });
+
+
+
+    // 点击指定索引的节点
+    function clickNodeAtIndex(index) {
+        if (index >= items.length)
+            index = 0
+        else if (index < 0)
+            index = items.length - 1
+        // 触发出现视频，点击视频
+        items[index].querySelector('img').click();
+        items[index].querySelector('video').click();
+        items[index].scrollIntoView({ behavior: 'auto' });
     }
-    clickNodeAtIndex(currentNodeIndex);
-});
-
-
-
-// 点击指定索引的节点
-function clickNodeAtIndex(index) {
-    if(index>=items.length)
-    index=0
-    else if(index<0)
-    index=items.length-1
-// 触发出现视频，点击视频
-  items[index].querySelector('img').click();
-  items[index].querySelector('video').click();
-  items[index].scrollIntoView({ behavior:     'auto' });
-}
 
 
 </script>
+
+ 
 {% endblock %}

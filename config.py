@@ -12,6 +12,7 @@ class Config:
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_TRACK_MODIFICATIONS=True
     T_THUMBNAIL='20%'
+    SAVE='C:/Users/Zin/Documents/testdata/upload'
 
 class DevelopmentConfig(Config):
      
@@ -21,12 +22,21 @@ class DevelopmentConfig(Config):
     FILE_PATH=r'C:\Users\Zin\Documents\testdata\mixdata'
     SMALL_FILE_PATH=r'C:\Users\Zin\Documents\testdata\t'
 
-class ProdConfig(Config):
+class Development2Config(Config):
     DEBUG = False
     PER_PAGE=100
     SQLALCHEMY_DATABASE_URI = r'sqlite:///data_explorer.db'
     FILE_PATH=[r'D:\真子集',r'E:\picture\a长篇小说',r'E:\picture\t\图文数据\女演员图\julia 图',r'E:\music']
     SMALL_FILE_PATH=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
+
+class ProdConfig(Config):
+    DEBUG = False
+    PER_PAGE=100
+    IS_PRO=True
+     
+    SMALL_FILE_PATH=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
+    SQLALCHEMY_DATABASE_URI = r'sqlite:///data_explorer.db'
+   
     
 
 class Filterc(Config):
@@ -42,6 +52,7 @@ class TestingConfig( Config):
 
 config = {
     'dev': DevelopmentConfig,
+    'dev2': Development2Config,
     'pro':  ProdConfig,
     'test': TestingConfig,
     'temp': Filterc,

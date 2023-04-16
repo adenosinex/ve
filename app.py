@@ -7,28 +7,20 @@ from factory import *
 from forms import *
 from models import *
 from tools import *
-app=creat_app('pro')
+app=creat_app('dev2')
 # flask run --port 80 --host 0.0.0.0
 per_page=100
  
 with app.app_context():
-        # who.reindex()
-          
-        db.create_all()  
-        File
-        # InitData().ana_dyname()
-        # InitData().scan_dir(r'X:\库\视频\dy like' )
+       
+        InitData().create_small_file
+        # InitData().scan_dir(r'C:\Users\Zin\Pictures\UbisoftConnect' )
+ 
  
 
-with app.test_request_context('/' ):
-        assert request.path == '/'
-
-class DbDate:
-    pass
  
 @app.route('/log/<string:op>')
 @app.route('/log/<int:id>/<string:op>')
-@app.route('/log')
 def logs(id='',op=''):
     # 置顶/删除记录 删除所有/除指定
     if id or op:
@@ -50,6 +42,9 @@ def logs(id='',op=''):
             [db.session.delete(i)for i in logs]
         db.session.commit()
         redirect(request.referrer) 
+
+@app.route('/log')
+def show_logs( ):
     # 历史记录
     logs=db.session.query(Log).filter(or_(Log.is_top==None,Log.is_top==False)).order_by(Log.utime.desc()).all()
     toplogs=db.session.query(Log).filter_by(is_top=True).order_by(Log.utime.desc()).all()
@@ -80,9 +75,7 @@ def logs(id='',op=''):
 def old_page():
     last_url=db.session.query(Log).order_by(Log.utime.desc()).first()
     if last_url:
-        last_url=last_url.url
-    if last_url:
-        return redirect(last_url)
+        return redirect(last_url.url)
     else:
         return redirect(request.referrer)
 
@@ -91,14 +84,14 @@ def func_vue( ):
     return render_template('vue.html',now=datetime.now())
 
 def filter_data(like='',dir_num='',type='',kw=''):
+    # 过滤数据
     base=File.query 
     # 目录筛选
     dirs=''
-    
     # 喜欢
     if like:  
         base=base.filter(File.tag!=None )
-        base.join(Tag,File.tag).order_by(Tag.tag)
+        base.join(Tag,File.tag).order_by(Tag.utime.desc())
 
     # 路径模式
     dirs_data=[]
@@ -155,12 +148,10 @@ def index( ):
     # 记录url
     if not request.full_path in {'/', '/?','/keep' }:
         # '/?pn=2'
-        last_url=request.url
+        last_url =request.url
         db.session.add(Log(url=last_url ))
         db.session.commit()
         print('log: '+last_url)
-    
-    
     
     sf=SearchForm()
     if sf.validate_on_submit():
@@ -233,11 +224,18 @@ def index( ):
      
   
 def item_vis(item):
-    # 数据查看 更直观
+    # 数据数据添加列 更直观
     item.vsize=f'{item.size//1024**2}MiB'
-    # 特定文件指定缩略图类型后缀
+    # 特定文件指定缩略图名
+    if item.type=='video':
+        item.hashname=f'{item.id}.gif'
+    elif item.type=='img':
+        item.hashname=f'{item.id}.jpg'
+    else:
+        item.hashname=f'{item.id}'
     if '水果派' in item.path:
-        item.suffix='img'
+        item.hashname=f'{item.id}.jpg'
+
     if item.tag and item.tag.like:
         item.is_like=True
 
@@ -245,14 +243,15 @@ def item_vis(item):
 
 @app.route('/detail/<id>',methods=['GET', 'POST'])
 def detail(id):
-    item=db.session.query(File).filter_by(id=id).first()
-    tags=[i[0] for i in db.session.query(distinct(Tag.tag) ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).all()]
     tf=TagForm()
+    if tf.validate_on_submit():
+        tag=tf.tag.data
+        item.set_tag(tag)
+        return 'ok'
+    item=db.session.query(File).filter_by(id=id).first()
     if item:
+        tags=[i[0] for i in db.session.query(distinct(Tag.tag) ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).all()]
         item=item_vis(item)
-        if tf.validate_on_submit():
-            tag=tf.tag.data
-            item.set_tag(tag)
 
         return render_template('detail.html',post=item,form=tf,tags=tags)
     return abort(404)
@@ -268,7 +267,11 @@ def add_files( ):
     if form.validate_on_submit():
         d=form.path.data+','
         paths=[i.strip() for i in d.split(',') if i]
-        a=Thread(target=InitData().scan_dir,args=(paths,app))
+        
+        def f( ):
+            with app.app_context():
+                InitData().scan_dir(paths)
+        a=Thread(target=f )
         a.daemon=True
         a.start()
         # r=InitData().scan_dir(paths)
@@ -277,18 +280,10 @@ def add_files( ):
         return redirect('/add')
     return render_template('add.html',form=form,message=message)
 
-@app.route('/share',methods=['GET', 'POST'])
-def share( ):
-    form=UpFile()
-    p=os.getenv('SAVE')
-    dir_make(p)
-    if form.validate_on_submit():
-        # 获取所有file
-        files=request.files.getlist('file')
-        for file in files:
-            file.save('{}/{}'.format(p,file.filename))
-       
-        return redirect(request.referrer)
+def files_info(p):
+    # 遍历文件信息
+    class DbDate:
+        pass
     cnt=count(1)
     def f(i):
         t=DbDate()
@@ -298,10 +293,25 @@ def share( ):
         t.vsize=f'{t.size//1024**2}MB'
         return t
     posts=[f(i) for i in get_files(p)]
+    return posts
+
+@app.route('/share',methods=['GET', 'POST'])
+def share( ):
+    form=UpFile()
+    p=app.config.get('SAVE')
+    dir_make(p)
+    if form.validate_on_submit():
+        # 获取所有file
+        files=request.files.getlist('file')
+        for file in files:
+            file.save('{}/{}'.format(p,file.filename))
+       
+        return redirect(request.referrer)
+    # 展示文件
     data={
-        'now':datetime.now(),
+        'now':datetime.datetime.now(),
         'form':form,
-        'posts':posts
+        'posts':files_info()
     }
    
     return render_template('share.html',**data)

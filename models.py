@@ -22,6 +22,7 @@ class File(db.Model):
     dir=db.Column(db.String,nullable=False)
     ctime=db.Column(db.String,default=datetime.datetime.now)
     tag=db.relationship('Tag', backref='file',uselist=False)  # 反向引用
+    file2=db.relationship('File2', backref='file',uselist=False)  # 反向引用
      # 小说高频词
     kw=db.Column(db.String,nullable=False)
      # 提取数字
@@ -65,12 +66,15 @@ class File(db.Model):
         db.session.commit()
         return message
 
-
+class File2(db.Model):
+    id=db.Column(db.String,db.ForeignKey(File.id),primary_key=True)
+    path=db.Column(db.String,nullable=False)
+     
 class Tag(db.Model):
     id=db.Column(db.String,db.ForeignKey(File.id),primary_key=True)
     like=db.Column(db.Boolean)
     tag=db.Column(db.String)
-    utime=db.Column(db.String,default=datetime.datetime.now)
+    utime=db.Column(db.String,default= datetime.datetime.now)
    
   
 class Dir(db.Model):
@@ -116,20 +120,30 @@ class InitData:
 
     def _index_file(self,file):
         # 文件索引
-        id=HashM().sha1_head(file)
+        hashid_file=HashM().sha1_head(file)
         # 已经存在跳过 路劲不一样更新路径
-        old_entry=File.query.filter_by(id=id).first()
+        file_old=File.query.filter_by(id=hashid_file).first()
         file_type=FileType_().media_type(file)
         
-        if  old_entry :
-            if old_entry.path!=file:
-                old_entry.path=file
-                db.session.add(old_entry)
+        if  file_old :
+            # 文件路径修改
+            if app.config.get('IS_PRO'):
+                file2_old=File2.query.filter_by(id=hashid_file).first()
+                if not file2_old:
+                    file2_old=File2(id=hashid_file,path=file)
+                else:
+                    file2_old.path=file
+                db.session.add(file2_old)
+
+            elif file_old.path!=file:
+                file_old.path=file
+                db.session.add(file_old)
+            db.session.commit()
             return 
         # 其他类型文件跳过
         if not file_type:
             return
-        item=File(id=id,name=Path(file).name,size=os.path.getsize(file),type=file_type,path=file,dir=str(Path(file).parent))
+        item=File(id=hashid_file,name=Path(file).name,size=os.path.getsize(file),type=file_type,path=file,dir=str(Path(file).parent))
         db.session.add(item)
         db.session.commit()
 
@@ -210,7 +224,7 @@ class InitData:
                 p=self.smallfiles_path+'/{}.jpg'.format(i.id)
                 SmallFile().thumbnail(i.path,p)
               
-        multi_threadpool(func=f,args=r,desc='生成缩略图 gif',pool_size=4 )
+        multi_threadpool(func=f,args=r,desc='生成缩略图jpg gif',pool_size=4 )
 
     def init_file(self,file_path):
         # 初始化数据
@@ -222,13 +236,16 @@ class InitData:
         else:
             files=get_files(file_path)
          # 旧文件
-        old_files={i[0] for i in  db.session.query(distinct(File.path)).all()}
+        if app.config.get('IS_PRO'):
+            old_files={i[0] for i in  db.session.query(distinct(File2.path)).all()}
+        else:
+            old_files={i[0] for i in  db.session.query(distinct(File.path)).all()}
         # 只添加新文件
         files=set(files).difference(old_files)
-        t=db.session.query(File).count()
+        cnt_files=db.session.query(File).count()
         # 文件数据
         multi_threadpool(func=self._index_file,args=files,desc='数据初始化-{}'.format(Path(file_path).name))
-        mes1='数据库数据：{}'.format(db.session.query(File).count()-t)
+        mes1='数据库数据：{}'.format(db.session.query(File).count()-cnt_files)
         print(mes1)
         return mes1
 
@@ -292,7 +309,7 @@ class InitData:
         dir=[i[0] for i in dirs if not '图文数据' in i[0]]
         self.scan_dir(dir,app)
         
-    def scan_dir(self,p  ):
+    def scan_dir(self,p ):
          
         if isinstance(p,list):
             for i in p:
@@ -304,6 +321,6 @@ class InitData:
                 self.init_file(p)
         #  生成缩略图
         self.init_dir()
-        self.create_small_file()
+        # self.create_small_file()
 
         
