@@ -6,7 +6,7 @@
 // 设置媒体属性
 let medias = [];
 let tagAttr = {
-    'video': { 'width': '100%', 'controls': 'true', 'autoplay': 'true' },
+    'video': {   'controls': 'true', 'autoplay': 'true' },
     'audio': { 'controls': 'true', 'loop': '' },
     // 'img': { 'width': '100%' }
 }
@@ -32,7 +32,7 @@ class ZoomableImage {
       this.scale = 1.0;
       
       // 箭头函数中使用当前 this 对象
-      // 鼠标滚轮事件监听器
+      // 鼠标滚轮事件监听器 
       this.imageEl.addEventListener('wheel', (e) => {
         e.preventDefault(); //禁止默认行为
         if (e.deltaY < 0) { // 滚轮向上滚动，放大图片

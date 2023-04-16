@@ -2,6 +2,10 @@ a{ padding:0 10px;}
 a.like{
     background-color: green;
   }
+
+video{
+  height: 100%;
+}
   #fullscreen-container {
 	  position: fixed;
 	  top: 0;
