@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os,re,subprocess,hashlib ,datetime
+import os,re,subprocess,hashlib  
 import sqlite3
 from urllib.parse import urlparse,parse_qs
 from pathlib import Path
@@ -255,11 +255,17 @@ class Db_Mani:
 
     def query(self, sql,simple=False):
         ret = self.c.execute(sql).fetchall()
+        # 多行单列数据 化为数组
         if ret and len(ret[0])==1:
             ret=[i[0] for i in ret]
+            # 单行单列返回一个元素
             if not simple and len(ret)==1:
                 ret=ret[0]
         return ret
+    def query_one(self,sql):
+        r=self.query(sql)
+        if r:
+            return r[0]
     
     def fixtime(self):
         # 数据库 时间戳转为字符

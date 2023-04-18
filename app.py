@@ -10,137 +10,23 @@ from tools import *
 app=creat_app('dev2')
 # flask run --port 80 --host 0.0.0.0
 per_page=100
- 
+
+def keep_3day_logs():
+    # 只保留三天的历史记录
+    today = datetime.now()  # 获取当前日期和时间
+    delta = timedelta(days=3)  # 创建一个 timedelta 对象表示过去的三天
+    three_days_ago = today - delta    # 计算出三天前的日期和时间
+    r=db.session.query(Tag ).filter(Tag.utime<three_days_ago ,and_(Tag.like==None,Tag.like==None,)).all()
+    [db.session.delete(i) for i in r]
+    db.session.commit()
 with app.app_context():
+        pass
+        
+        pass
+        # InitData().scan_dir(r'X:\库\视频\dy like')
+        # InitData().scan_dir(r'D:\备份 万一\ds photo\video')
+        # InitData()._index_file
        
-        InitData().create_small_file
-        # InitData().scan_dir(r'C:\Users\Zin\Pictures\UbisoftConnect' )
- 
- 
-
- 
-@app.route('/log/<string:op>')
-@app.route('/log/<int:id>/<string:op>')
-def logs(id='',op=''):
-    # 置顶/删除记录 删除所有/除指定
-    if id or op:
-        if id   :
-            log=db.session.query(Log).filter_by(id=id).first()
-            if op=='top':
-                log.utime=datetime.utcnow()
-                if log.is_top:
-                    log.is_top=False
-                else:
-                    log.is_top=True
-            else:
-                db.session.delete(log)
-        elif op=='delall':
-            logs=db.session.query(Log).all()
-            [db.session.delete(i)for i in logs]
-        elif op=='del':
-            logs=db.session.query(Log).filter(or_(Log.is_top==None,Log.is_top==False)).all()
-            [db.session.delete(i)for i in logs]
-        db.session.commit()
-        redirect(request.referrer) 
-
-@app.route('/log')
-def show_logs( ):
-    # 历史记录
-    logs=db.session.query(Log).filter(or_(Log.is_top==None,Log.is_top==False)).order_by(Log.utime.desc()).all()
-    toplogs=db.session.query(Log).filter_by(is_top=True).order_by(Log.utime.desc()).all()
-    logs=toplogs+logs 
-    index=count(1)
-    # log拓展信息
-    def f(i):
-        i.time=i.utime 
-        i.index=next(index)
-        dir_num=parse_qs(urlparse(i.url).query).get('dir_num',' ')[0]
-        pn=parse_qs(urlparse(i.url).query).get('pn',' ')[0]
-        name=''
-        if dir_num:
-            dir_obj=db.session.query(Dir).filter_by(id=dir_num).one_or_none()
-            if dir_obj:
-                name=Path(dir_obj.path).name
-                name='path:'+name
-            elif  dir_num =='-1':
-                name='path:all'
-        if pn:
-            name+=' pn:'+pn
-        i.name=name
-        return i
-    logs=[f(i) for i in logs]
-    return render_template('logs.html',logs=logs)
-
-@app.route('/keep')
-def old_page():
-    last_url=db.session.query(Log).order_by(Log.utime.desc()).first()
-    if last_url:
-        return redirect(last_url.url)
-    else:
-        return redirect(request.referrer)
-
-@app.route('/vue')
-def func_vue( ):
-    return render_template('vue.html',now=datetime.now())
-
-def filter_data(like='',dir_num='',type='',kw=''):
-    # 过滤数据
-    base=File.query 
-    # 目录筛选
-    dirs=''
-    # 喜欢
-    if like:  
-        base=base.filter(File.tag!=None )
-        base.join(Tag,File.tag).order_by(Tag.utime.desc())
-
-    # 路径模式
-    dirs_data=[]
-    if dir_num  :  
-        dir_num=int(dir_num)
-        if dir_num==0 or dir_num==-1:
-            item=Dir.query.order_by(Dir.level).first()
-        else:
-            item=Dir.query.filter_by(id=dir_num).first()
-        # 目录筛选 文件夹列表第一个为父文件夹
-        if item:
-            request_path=item.path
-            # 根文件夹      
-            if dir_num==-1:
-                print(item.level)
-                dirs=Dir.query.order_by(Dir.path).filter_by( rank=1).all()
-            # 子文件夹
-            else:
-                dirs=Dir.query.filter_by( dir =request_path).all()
-            # 寻找父文件夹
-            pdirs=Dir.query.filter_by( path =item.dir).first()
-            # 顶层文件夹 设为/
-            if not pdirs:
-                pdirs=Dir(id=-1,path='/')
-            
-            def f(i):
-                # 只保留爷目录名 方便查看
-                t=Path(i.path).parent.parent
-                i.vpath=i.path  if dir_num==-1 else i.path.replace(str(t),'')
-                return i
-            dirs_data={
-                'parent':f(pdirs),
-                'current': f(item),
-                'dirs':[ f(i) for i in dirs]
-            }
-            base=base.filter(File.dir==request_path)
-
-    # 类型字筛选
-    if   type and type!='all':
-        base=base.filter(File.type==type) 
-    # 关键词筛选
-    if   kw:
-        # base=base.filter(multi_ruledb(search_kw))
-        t=kw if len(kw)>2 else kw+' '+kw
-        multi_ruledb
-        # base=base.filter(File.path.like('%{}%'.format(search_kw)))
-        base=base.whooshee_search(t)
-    return base,dirs_data
- 
 
 
 @app.route('/',methods=['GET', 'POST'])
@@ -241,20 +127,150 @@ def item_vis(item):
 
     return item
 
+
+ 
+
+ 
+@app.route('/log/<string:op>')
+@app.route('/log/<int:id>/<string:op>')
+def logs(id='',op=''):
+    # 置顶/删除记录 删除所有/除指定
+    if id or op:
+        if id   :
+            log=db.session.query(Log).filter_by(id=id).first()
+            if op=='top':
+                log.utime=datetime.utcnow()
+                if log.is_top:
+                    log.is_top=False
+                else:
+                    log.is_top=True
+            else:
+                db.session.delete(log)
+        elif op=='delall':
+            logs=db.session.query(Log).all()
+            [db.session.delete(i)for i in logs]
+        elif op=='del':
+            logs=db.session.query(Log).filter(or_(Log.is_top==None,Log.is_top==False)).all()
+            [db.session.delete(i)for i in logs]
+        db.session.commit()
+    return redirect(request.referrer) 
+
+
+@app.route('/log')
+def show_logs( ):
+    # 历史记录
+    logs=db.session.query(Log).order_by(Log.utime.desc()).limit(30).all()
+    toplogs=db.session.query(Log).filter_by(is_top=True).order_by(Log.utime.desc()).all()
+    losgs_set=[i.id for i in toplogs]
+    logs=toplogs+[i for i in logs if not i.id in losgs_set]
+    index=count(1)
+    # log拓展信息
+    def f(i):
+        i.time=i.utime 
+        i.index=next(index)
+        dir_num=parse_qs(urlparse(i.url).query).get('dir_num',' ')[0]
+        pn=parse_qs(urlparse(i.url).query).get('pn',' ')[0]
+        name=''
+        if dir_num:
+            dir_obj=db.session.query(Dir).filter_by(id=dir_num).one_or_none()
+            if dir_obj:
+                name=Path(dir_obj.path).name
+                name='path:'+name
+            elif  dir_num =='-1':
+                name='path:all'
+        if pn:
+            name+=' pn:'+pn
+        i.name=name
+        return i
+    logs=[f(i) for i in logs]
+    return render_template('logs.html',logs=logs)
+
+@app.route('/keep')
+def old_page():
+    last_url=db.session.query(Log).order_by(Log.utime.desc()).first()
+    if last_url:
+        return redirect(last_url.url)
+    else:
+        return redirect(request.referrer)
+
+@app.route('/vue')
+def func_vue( ):
+    return render_template('vue.html',now=datetime.now())
+
+def filter_data(like='',dir_num='',type='',kw=''):
+    # 过滤数据
+    base=File.query 
+    # 目录筛选
+    dirs=''
+    # 喜欢
+    if like:  
+        base=base.filter(File.tag!=None )
+        base.join(Tag,File.tag).order_by(Tag.utime.desc())
+
+    # 路径模式
+    dirs_data=[]
+    if dir_num  :  
+        dir_num=int(dir_num)
+        if dir_num==0 or dir_num==-1:
+            item=Dir.query.order_by(Dir.level).first()
+        else:
+            item=Dir.query.filter_by(id=dir_num).first()
+        # 目录筛选 文件夹列表第一个为父文件夹
+        if item:
+            request_path=item.path
+            # 根文件夹      
+            if dir_num==-1:
+                print(item.level)
+                dirs=Dir.query.order_by(Dir.path).filter_by( rank=1).all()
+            # 子文件夹
+            else:
+                dirs=Dir.query.filter_by( dir =request_path).all()
+            # 寻找父文件夹
+            pdirs=Dir.query.filter_by( path =item.dir).first()
+            # 顶层文件夹 设为/
+            if not pdirs:
+                pdirs=Dir(id=-1,path='/')
+            
+            def f(i):
+                # 只保留爷目录名 方便查看
+                t=Path(i.path).parent.parent
+                i.vpath=i.path  if dir_num==-1 else i.path.replace(str(t),'')
+                return i
+            dirs_data={
+                'parent':f(pdirs),
+                'current': f(item),
+                'dirs':[ f(i) for i in dirs]
+            }
+            base=base.filter(File.dir==request_path)
+
+    # 类型字筛选
+    if   type and type!='all':
+        base=base.filter(File.type==type) 
+    # 关键词筛选
+    if   kw:
+        # base=base.filter(multi_ruledb(search_kw))
+        t=kw if len(kw)>2 else kw+' '+kw
+        multi_ruledb
+        # base=base.filter(File.path.like('%{}%'.format(search_kw)))
+        base=base.whooshee_search(t)
+    return base,dirs_data
+ 
+
+
 @app.route('/detail/<id>',methods=['GET', 'POST'])
 def detail(id):
     tf=TagForm()
+    item=db.session.query(File).filter_by(id=id).first()
     if tf.validate_on_submit():
         tag=tf.tag.data
         item.set_tag(tag)
-        return 'ok'
-    item=db.session.query(File).filter_by(id=id).first()
-    if item:
-        tags=[i[0] for i in db.session.query(distinct(Tag.tag) ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).all()]
-        item=item_vis(item)
+        return redirect(request.referrer)
+   
+    tags=[i[0] for i in db.session.query(distinct(Tag.tag) ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).all()]
+    item=item_vis(item)
 
-        return render_template('detail.html',post=item,form=tf,tags=tags)
-    return abort(404)
+    return render_template('detail.html',post=item,form=tf,tags=tags)
+     
 
 @app.route('/play/<id>')
 def func_name(id):
@@ -309,7 +325,7 @@ def share( ):
         return redirect(request.referrer)
     # 展示文件
     data={
-        'now':datetime.datetime.now(),
+        'now':datetime.now(),
         'form':form,
         'posts':files_info()
     }

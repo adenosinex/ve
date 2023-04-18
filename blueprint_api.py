@@ -65,6 +65,25 @@ def src_file(id):
             image = f.read()
             return Response(image, mimetype="image/png")
 
+# 收藏网址 
+@api_bp.route("/toplog")  
+def log_web( ):
+    url=request.referrer
+    log=db.session.query(Log).filter_by(url=url).first()
+    if log:
+        if log.is_top:
+            log.is_top=None
+            mes='concel'
+        else:
+            log.is_top=True
+            mes='success'
+    else:
+        log=Log(url=url,is_top=True)
+        mes='success add'
+    db.session.add(log)
+    db.session.commit()
+    return mes
+
 # 单个媒体数据 
 @api_bp.route("/tag/<id>")  
 def tag_file(id):

@@ -1,15 +1,20 @@
 
 // import axios from 'js/axios.min.js'
 
-
+  
 
 // 设置媒体属性
+
+// 获取id正则 获取下一个id
+let ReId = /[A-Z\d]{40}/
+
 let medias = [];
 let tagAttr = {
-    'video': {   'controls': 'true', 'autoplay': 'true' },
+    'video': { 'width': '100%', 'controls': 'true', 'autoplay': 'true' },
     'audio': { 'controls': 'true', 'loop': '' },
     // 'img': { 'width': '100%' }
 }
+
 
 for (let tag of Object.entries(tagAttr)) {
     console.log(tag)
@@ -32,7 +37,7 @@ class ZoomableImage {
       this.scale = 1.0;
       
       // 箭头函数中使用当前 this 对象
-      // 鼠标滚轮事件监听器 
+      // 鼠标滚轮事件监听器
       this.imageEl.addEventListener('wheel', (e) => {
         e.preventDefault(); //禁止默认行为
         if (e.deltaY < 0) { // 滚轮向上滚动，放大图片
@@ -243,7 +248,7 @@ class showImg {
                 }
         );
 
-        // 点击黑色背景区域同样会结束全屏模式
+        // 点击图片不管
         this.image.addEventListener('click', (e) => e.stopPropagation());
     }
 
@@ -265,11 +270,6 @@ class showImg {
 }
 
   
-
-
-  
-
-  
 // 预览节点 点击详情
 let previews = document.querySelectorAll('.preview')
 // 点击弹出查看图片查看
@@ -279,7 +279,11 @@ previews.forEach((node) => {
     let img = node.querySelector('img')
     if (img)
         img.addEventListener('click', function () {
+            // 图片放大 视频查看详情
+            if(img.src.includes('jpg'))
             imgshow.showFullscreen('/file/' + node.dataset.id);
+            else
+            location.href='/detail/'+ReId.exec(img.src)
         });
     // })
 
@@ -290,23 +294,30 @@ previews.forEach((node) => {
 
 
 // // 本地存储预览id
-let previewsList, previewsDict;
+let previewsList, previewsDict={} ,previewsDictName,previewsDictLink;
 if (previews.length > 5) {
     // id api 字典
-    previewsDict = {};
+    previewsDictName = {};
+    previewsDictLink = {};
     previewsList = new Array();
-    previews.forEach((node) => {
+    previews.forEach (  (node) => {
         let id = node.dataset.id;
+        previewsDictLink[id] = '/detail/' + id
+        previewsDictName[id] = node.dataset.name
         previewsList.push(id)
-        previewsDict[id] = '/detail/' + id
     })
     previewsDict['index'] = previewsList
-    localStorage.setItem('preLink', JSON.stringify(previewsDict))
+    previewsDict['name'] = previewsDictName
+    previewsDict['link'] = previewsDictLink
+    localStorage.setItem('preLink', JSON.stringify(previewsDict ))
 }
 else {
-    previewsDict = JSON.parse(localStorage.getItem('preLink'));
-    if (previewsDict)
-        previewsList = previewsDict['index']
+    previewsDict  = JSON.parse(localStorage.getItem('preLink'));
+    if (previewsDict ){
+        previewsList = previewsDict ['index']
+        previewsDictName = previewsDict ['name']
+        previewsDictLink = previewsDict ['link']
+    }
 
 }
 
@@ -346,13 +357,12 @@ nclickEvent(3, document, (e) => {
         else if (index === -1)
             index = previewsList.length - 1
 
-        let url = previewsDict[previewsList[index]]
+        let url = previewsDictLink[previewsList[index]]
         let id = previewsList[index]
         window.location.href = url
     }
 })
-// 获取id正则 获取下一个id
-let ReId = /[A-Z\d]{40}/
+
 
 // 获取指定位置id 超范围自动循环
 function previewsSecureId(index) {
@@ -373,8 +383,10 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
         node.style.backgroundColor = 'red'
         axios.get(node.href)
             .then(function (response) {
-                if (funcSuccess(response))
+                if (funcSuccess(response.data))
                     node.style.backgroundColor = 'green'
+                else
+                node.style.backgroundColor = 'white'
             })
             .catch(function (error) {
                 node.style.backgroundColor = 'white'
@@ -382,7 +394,7 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
     }
     )
 }
-// 获取滑动角度
+// 获取触摸滑动角度
 class SwipeHandler {
     constructor() {
         this.startx = 0;
@@ -462,6 +474,92 @@ class SwipeHandler {
         return this.nowr
     }
 }
+// 鼠标点击滑动
+class MouseDragDirectionTracker {
+  constructor() {
+    this.startX = 0;
+    this.startY = 0;
+    this.endX = 0;
+    this.endY = 0;
+
+    // 监听整个文档上的鼠标按下事件
+    document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    // 监听整个文档上的鼠标移动事件
+    document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    // 监听整个文档上的鼠标松开事件
+    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+  }
+
+  // 监听鼠标按下事件的处理函数
+  handleMouseDown(e) {
+    // 记录初始鼠标位置
+    this.startX = e.clientX;
+    this.startY = e.clientY;
+  }
+
+  // 监听鼠标移动事件的处理函数
+  handleMouseMove(e) {
+    if (this.startX === 0 && this.startY === 0) {
+      return;
+    }
+
+    // 记录最终鼠标位置
+    this.endX = e.clientX;
+    this.endY = e.clientY;
+    this.move=true
+  }
+
+  // 监听鼠标松开事件的处理函数
+  handleMouseUp() {
+    const deltaX = this.endX - this.startX;
+    const deltaY = this.endY - this.startY;
+    // 没有移动或者移动过短跳过
+     if(!this.move||(Math.abs(deltaX)<5 &&Math.abs(deltaY)<5)){
+        this.direction='no'
+        this.restoreValue()
+        this.move=false
+         return 
+        }
+    this.move=false
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {    // 水平方向移动更大
+      if (deltaX > 0) {
+        console.log("向右滑动");
+       
+      } else {
+        console.log("向左滑动");
+      }
+    } else {    // 垂直方向移动更大
+      if (deltaY > 0) {
+          console.log("向上滑动");
+          this.direction='up'
+        } else {
+            console.log("向下滑动");
+            this.direction='down'
+        }
+    }
+
+   this.restoreValue()
+  }
+  restoreValue(){
+     // 重置鼠标初始和最终位置信息
+    this.startX = 0;
+    this.startY = 0;
+    this.endX = 0;
+    this.endY = 0;
+  }
+  getDirection(){
+    return  this.direction;
+  }
+}
+
+// 收藏网址
+let toplog=document.querySelector('.toplog')
+if (toplog){
+    clickAWithColor(toplog,(res)=>res.includes('success'))
+    // 查看收藏状态
+    toplog.click()
+    toplog.click()
+}
 
 
 //   播放页滑动播放
@@ -472,10 +570,11 @@ if (location.pathname.includes('play')) {
     let tagname = file.tagName
     if (tagname === 'VIDEO' || tagname === 'AUDIO')
         file.play()
-
+     // 高度为一屏幕
+    file.height = window.innerHeight;
 
     let id = ReId.exec(file.src)[0]
-
+    // 提供链接
     let target = document.createElement('a')
     target.href = '/detail/' + id
     let btn = document.createElement('button')
@@ -493,38 +592,53 @@ if (location.pathname.includes('play')) {
         e.preventDefault();
     }, { passive: false });
 
-
-    //手指离开屏幕
-    const swipeHandler = new SwipeHandler(); // 创建一个滑动事件处理类的实例对象
-    document.addEventListener("touchend", function (e) {
-
-        let direction = swipeHandler.now();
-        if (!direction)
-            return
+    // 选项决定切换
+    function swithchhandler(direction){
         id = ReId.exec(file.src)[0]
         let index = previewsList.indexOf(id)
         pid = previewsSecureId(index - 1)
         nid = previewsSecureId(index + 1)
 
         switch (direction) {
-            // case 0:
-            //     alert("点击！");
-            //     break;
             case 'down':
                 id = nid
                 break;
             case 'up':
                 id = pid
                 break;
+            default:
+                return
         }
         file.src = '/file/' + id
+        file.scrollIntoView()
         target.href = '/detail/' + id
         newUrl = window.location.origin + '/play/' + id
         history.pushState('', '', newUrl);
+        document.title= previewsDictName[previewsList[index]]
+    }
+    // 自动下一个
+    file.addEventListener('ended', () => { swithchhandler('down') })
+    // 点击播放
+    // file.addEventListener('click',()=>{
+    //     if(file.paused)
+    //     file.play()
+    //     else
+    //     file.pause()
+    // })
+    //手指离开屏幕
+    const swipeHandler = new SwipeHandler(); // 创建一个滑动事件处理类的实例对象
+    document.addEventListener("touchend", function (e) {
+        let direction = swipeHandler.now();
+        swithchhandler(direction)
 
     }, false);
+    // 滑动结束
+    const mouseDragDirectionTracker = new MouseDragDirectionTracker();
+     document.addEventListener('mouseup', ()=>{
+        let direction=mouseDragDirectionTracker.getDirection()
+        swithchhandler(direction)
 
-
+     });
 
 }
 // 鼠标在视频上延迟隐藏
@@ -541,7 +655,7 @@ tagObj.mousemove(function () {
         });
     }, 2000)
 });
-//   详情页添加下一个跳转
+//   详情页设置添加下一个跳转
 if (location.pathname.includes('detail')) {
     // 获取文件自动播放 设置id
     let file = $('.file').children()[0]
@@ -549,7 +663,8 @@ if (location.pathname.includes('detail')) {
     if (tagname === 'VIDEO' || tagname === 'AUDIO')
         file.play()
     file.setAttribute('id', 'play')
-
+    // 高度为一屏幕
+    file.height = window.innerHeight;
     // 获取id
     let id = ReId.exec(location.href)[0]
     let index = previewsList.indexOf(id)
@@ -571,13 +686,13 @@ if (location.pathname.includes('detail')) {
     }
     // 链接嵌套按钮
     let container = document.createElement('div')
-    let next = createLink('下一个', nlink)
+    let next = createLink('下一个', nlink,'next')
 
     // 播放完自动下一个
     if (tagname === 'VIDEO' || tagname === 'AUDIO')
         file.addEventListener('ended', () => { next.click() })
 
-    let prev = createLink('上一个', plink, 'pull-right')
+    let prev = createLink('上一个', plink, 'pull-right prev')
 
     let tip = document.createElement('span')
     tip.textContent = index
@@ -598,7 +713,7 @@ if (location.pathname.includes('detail')) {
 
 
     // 键盘控制下一个
-    window.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', (e) => {
         switch (e.key) {
             case 'ArrowLeft':
                 prev.click()
@@ -609,12 +724,12 @@ if (location.pathname.includes('detail')) {
     })
     // 左右点击下一个
     // document.documentElement.clientWidth
-    $('body')[0].addEventListener('click', (e) => {
+   document.addEventListener('click', (e) => {
         let clickx = e.screenX
         if (clickx < 200 && pid)
-            prev.click()
+        prev.click()
         if (clickx > 1300 && nid)
-            next.click()
+        next.click()
     })
     // 双击下一个
     nclickEvent(2, file, () => {

@@ -2,7 +2,7 @@
 #     HashM,VideoM,Txt_Ana,\
 #     os,Path
  
-from datetime import datetime
+from datetime import datetime,timedelta
 from itertools import count
 from sqlalchemy import and_,or_,case,distinct,or_,func
 # from sqlalchemy.orm import or_
@@ -20,7 +20,8 @@ class File(db.Model):
     type=db.Column(db.String,nullable=False)
     path=db.Column(db.String,nullable=False)
     dir=db.Column(db.String,nullable=False)
-    ctime=db.Column(db.String,default=datetime.datetime.now)
+    ctime=db.Column(db.String )
+    utime=db.Column(db.String,default=datetime.now)
     tag=db.relationship('Tag', backref='file',uselist=False)  # 反向引用
     file2=db.relationship('File2', backref='file',uselist=False)  # 反向引用
      # 小说高频词
@@ -74,7 +75,7 @@ class Tag(db.Model):
     id=db.Column(db.String,db.ForeignKey(File.id),primary_key=True)
     like=db.Column(db.Boolean)
     tag=db.Column(db.String)
-    utime=db.Column(db.String,default= datetime.datetime.now)
+    utime=db.Column(db.String,default= datetime.now)
    
   
 class Dir(db.Model):
@@ -89,8 +90,10 @@ class Log(db.Model):
     id=db.Column(db.Integer ,primary_key=True)
     url=db.Column(db.String)
     is_top=db.Column(db.Boolean)
-    utime=db.Column(db.DateTime, default=datetime.datetime.now, index=True)
- 
+    utime=db.Column(db.DateTime, default=datetime.now, index=True)
+
+     
+
 
 def multi_ruledb( sentens, most=False):
     # 空格句子 多条件查询
@@ -109,22 +112,80 @@ def multi_ruledb( sentens, most=False):
         rule = base.like(f'%{sentens}%')
     return rule
 
+class FileProcessor:
+    # 文件索引 自定义信息
+    def __init__(self, file ):
+        self.hashid_file=HashM().sha1_head(file)
+        self.file =file
+    def get_data_File(self):
+        # 初始化，修改数据
+        file=self.file 
+        file_type=FileType_().media_type(file)
+        self.fileclass = File(id=self.hashid_file,name=Path(file).name,\
+            size=os.path.getsize(file),type=file_type,path=file,dir=str(Path(file).parent)\
+            ,ctime=datetime.fromtimestamp(os.path.getmtime(file))\
+            ,utime=datetime.now())
+        self.process_dyname()
+        self.process_appletime()
+        return self.fileclass
+
+    def process_appletime(self):
+        # 录像指定时间
+        file=self.fileclass
+        if not r'D:\备份 万一\ds photo\MobileBackup' in file.path:
+            return
+        try:
+            time_str = file.name[4:12]
+            if len(time_str)!=8:
+                return
+            datetime_obj = datetime.strptime(time_str, '%Y%m%d')
+        except:
+            return
+        t=str(datetime_obj)
+        if t !=file.ctime:
+            file.ctime=datetime_obj
+            
+       
+    def process_dyname(self):
+        file=self.fileclass
+        if not r'X:\库\视频\dy like' in file.path:
+            return
+        id=Path(file.name).stem
+        raw_data=Db_Mani(r'X:/库/code/douyin get/data-dy.db').query_one(f'select id,desc,ctime from raw where id="{id}"')
+        if raw_data:
+            id,desc,ctime=raw_data
+            if not ctime:
+                ctime=0
+            if file.name!=desc:
+                file.name,file.ctime=desc,datetime.fromtimestamp(int(ctime))
+                 
+                
+
+ 
+
 class InitData:
     def __init__(self) -> None:
         db.create_all()
         self.files_path=app.config.get('FILE_PATH')
         self.smallfiles_path=app.config.get('SMALL_FILE_PATH')
 
- 
-       
-
     def _index_file(self,file):
-        # 文件索引
-        hashid_file=HashM().sha1_head(file)
-        # 已经存在跳过 路劲不一样更新路径
-        file_old=File.query.filter_by(id=hashid_file).first()
+        # 添加文件数据
+        # 其他类型文件跳过
         file_type=FileType_().media_type(file)
+        if not file_type:
+            return
+        # 文件索引
+        file_data=FileProcessor(file)
+        # 已经存在跳过 路劲不一样更新路径
+        hashid_file=file_data.hashid_file
+        file_old=File.query.filter_by(id=hashid_file).first()
         
+        def f_movefile(fileobj):
+            fileobj.path=file
+            fileobj.dir=str(Path(file).parent)
+            return fileobj
+        # 存在旧文件 更新路径，生产更新或添加第二路径
         if  file_old :
             # 文件路径修改
             if app.config.get('IS_PRO'):
@@ -132,40 +193,22 @@ class InitData:
                 if not file2_old:
                     file2_old=File2(id=hashid_file,path=file)
                 else:
-                    file2_old.path=file
+                    file2_old=f_movefile(file2_old)
                 db.session.add(file2_old)
 
             elif file_old.path!=file:
-                file_old.path=file
+                file_old=f_movefile(file_old)
                 db.session.add(file_old)
             db.session.commit()
             return 
-        # 其他类型文件跳过
-        if not file_type:
-            return
-        item=File(id=hashid_file,name=Path(file).name,size=os.path.getsize(file),type=file_type,path=file,dir=str(Path(file).parent))
+         
+        item=file_data.get_data_File()
         db.session.add(item)
         db.session.commit()
 
+
     def ana_dyname(self):
-         # 使用作者发布信息为名
-        def func_rec():
-            t=Db_Mani(r'X:/库/code/douyin get/data-dy.db').query('select id,desc,ctime from raw')
-            data={i[0]:[i[1],i[2]] for i in t}
-            files=db.session.query(File).filter (File.dir.like(r'%X:\库\视频\dy like%')).all()
-            def f(i):
-                if not data.get(Path(i.path).stem):
-                    return
-               
-                # i.name,ctime=data.get(Path(i.path).stem)
-                # i.ctime=datetime.datetime.fromtimestamp(int(ctime))
-                if i.name==Path(i.path).name:
-                    i.name,ctime=data.get(Path(i.path).stem)
-                    i.ctime=datetime.datetime.fromtimestamp(int(ctime))
-                pass
-                
-            multi_threadpool(func=f,args=files)
-            
+        
         def func_old():
             t=Db_Mani(r'X:/库/dyvideo.db')
             sql='select videos.id,videos.desc,authors.nickname,videos.ctime  from videos,authors,heart where videos.id=heart.id and videos.aid=authors.uid'
@@ -184,8 +227,9 @@ class InitData:
                     return i
             # [f(i) for i in files ]
             multi_threadpool(func=f,args=files)
-        func_rec()
-        db.session.commit()
+        
+
+ 
 
     def ana_txt(self):
          # 文本分析数据
@@ -321,6 +365,7 @@ class InitData:
                 self.init_file(p)
         #  生成缩略图
         self.init_dir()
+        self.ana_dyname()
         # self.create_small_file()
 
         

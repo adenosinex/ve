@@ -3,9 +3,9 @@ a.like{
     background-color: green;
   }
 
-video{
-  height: 100%;
-}
+/* video{
+  display: block;
+} */
   #fullscreen-container {
 	  position: fixed;
 	  top: 0;
