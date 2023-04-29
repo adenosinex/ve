@@ -17,7 +17,7 @@ def response_soure(p):
         target_time=0
         range=0
     f.seek(target_time)
-    headers = {
+    headers = {  
         'Accept-Range':'bytes',
         'Content-Length': fileSize,
         'Content-Range': range

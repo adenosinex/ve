@@ -14,10 +14,10 @@ def los_file( ):
     r=File.query.filter(File.ctime!=None).paginate(page=pn,per_page=per_page)
     
     kwargs_page=dict()
-    data={
+    data={ 
         'endpoint':'api_new.los_file',
         'kwargs_page':kwargs_page,
-        'posts':r.items,
+        'posts':r.items,  
         'pagination':r
     }
     return  render_template('new/index.html',**data)

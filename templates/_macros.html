@@ -37,13 +37,15 @@
     <!-- 图片 -->
     
     {% if post.type=='music'%}
-    <audio src="/file/{{post.id}}" data-desc= "{{post.name}}"  class="img-responsive center-block "  data-link="/detail/{{post.id}}" data-id="{{post.id}}"  ></audio>
+    <audio src="/file/{{post.id}}" data-desc= "{{post.name}}"  class="  center-block "  data-link="/detail/{{post.id}}" data-id="{{post.id}}"  ></audio>
     {% else %}  
-    <img src={{ url_for('api_bp.static',filename=post.hashname) }} class="img-responsive center-block " data-link="/detail/{{post.id}}" data-id="{{post.id}}">
+    <img src={{ url_for('api_bp.static',filename=post.hashname) }} class="  center-block {{post.type}}" data-link="/detail/{{post.id}}" data-id="{{post.id}}">
     {%endif%}
  
       <div class="card-body">
         <!-- 文件名 -->
+         
+        <p class="card-text"> size:{{post.vsize}}  </p>
         <p class="card-text">{{post.ctime}} name:{{post.name}}  </p>
         <!-- 形容 -->
         {%if post.kw%}
@@ -58,7 +60,7 @@
             <a href='/tag/{{post.id}}?tag=like' class='sendLike  {%if post.is_like %}  like {%endif%}'>
             <button type="button" class="btn btn-sm btn-outline-secondary "  >like</button>
             </a>
-            <a href='/play/{{post.id}}'>
+            <a href='/play/{{post.id}}' target="_blank">
               <button type="button" class="btn btn-sm btn-outline-secondary  play"   >play</button>
             </a>
           </div>

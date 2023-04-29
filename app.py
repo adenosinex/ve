@@ -1,7 +1,10 @@
  
 from itertools import count
+import pickle
 import re
 import time
+
+import urllib3
 
 from factory import *
 from forms import *
@@ -10,7 +13,7 @@ from tools import *
 app=creat_app('dev2')
 # flask run --port 80 --host 0.0.0.0
 per_page=100
-
+get_files
 def keep_3day_logs():
     # 只保留三天的历史记录
     today = datetime.now()  # 获取当前日期和时间
@@ -19,13 +22,37 @@ def keep_3day_logs():
     r=db.session.query(Tag ).filter(Tag.utime<three_days_ago ,and_(Tag.like==None,Tag.like==None,)).all()
     [db.session.delete(i) for i in r]
     db.session.commit()
+
+def memory_smallfile(ins=''):
+    print('静态文件索引')
+    p=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
+    c=r'C:\Users\Zin\Pictures\Saved Pictures\small file\index.cache'
+    if os.path.exists(c):
+        ins=pickle.load(open(c,'rb'))
+        print('使用缓存')
+    else:
+        ins={Path(i).stem:i.replace(p+'\\','').replace('\\','/') for i in get_files(p)}
+    pickle.dump(ins,open(c,'wb'))
+    app.config['data']=ins
+ 
+    return ins
+
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+ 
+
 with app.app_context():
         pass
-        
+        r=memory_smallfile()
+        r=db.session.query(Tag).all()
+        # watchdog()
         pass
         # InitData().scan_dir(r'X:\库\视频\dy like')
+        # InitData().scan_dir(r'X:\库\DyView')
         # InitData().scan_dir(r'D:\备份 万一\ds photo\video')
-        # InitData()._index_file
+        # InitData().scan_dir(r'D:\抖音\view authors')
+        InitData().init_dir 
+        FileProcessor.process_dyname
        
 
 
@@ -40,10 +67,11 @@ def index( ):
         print('log: '+last_url)
     
     sf=SearchForm()
+    ff=FilterForm()
     if sf.validate_on_submit():
         search_kw=sf.search.data.strip() if sf.search.data else ''
         search_type=sf.select.data
-        is_dir=sf.dir.data
+         
         like=sf.like.data
         # 表单数据转发get
         kwargs_page=dict()
@@ -52,8 +80,8 @@ def index( ):
             kwargs_page['type']=search_type
         if search_kw:
             kwargs_page['kw']=search_kw
-        if is_dir:
-            kwargs_page['dir_num']=-1
+        # if is_dir:
+        #     kwargs_page['dir_num']=-1
         if like:
             kwargs_page['like']=True
         # 保留get参数
@@ -61,28 +89,27 @@ def index( ):
 
         return redirect( url_for('index',**kwargs_page ))
     else:
-        search_kw=request.args.get('kw')
-        search_type=request.args.get('type')
-        dir_num=request.args.get('dir_num')
-        like=request.args.get('like')
-         # 传递页码关键词
+         # 旧数据提取
         kwargs_page=dict()  
-        if search_type: 
-            sf.select.data=search_type
-            kwargs_page['type']=search_type
-        if search_kw:
-            sf.search.data=search_kw
-            kwargs_page['kw']=search_kw
-        if   dir_num:  
-            sf.dir.data=True
-            kwargs_page['dir_num']=dir_num
-        if like:
+        old_args=url_args(request.url)
+        kwargs_page.update(old_args)
+        
+ 
+        # 表单预填充
+        if kwargs_page.get('type'): 
+            sf.select.data=kwargs_page.get('type')
+            ff.media_type.data=kwargs_page.get('type')
+        
+        if kwargs_page.get('kw'):
+            sf.search.data=kwargs_page.get('kw')
+           
+        if kwargs_page.get('like'):
             sf.like.data=True
-            kwargs_page['like']=True
+           
         pn=int(request.args.get('pn',1))
     # 数据获取处理
     start_time=time.time()
-    base,dirs_data=filter_data(**kwargs_page)
+    base,dirs_data=meida_query_data( kwargs_page)
     base=base.order_by(File.num)
     base=base.order_by(File.ctime.desc())
     pgn=base.paginate(page=pn,per_page=per_page)
@@ -92,10 +119,11 @@ def index( ):
     data['form']=sf
     data['pagination']=pgn
     data['dirs_data']=dirs_data
+    data['fform']=ff
     data.update({
     'pages':f'{pgn.per_page}/{pgn.total}',
     'spend_time':'{:.3f}毫秒'.format( (time.time()-start_time)*1000),
-    'type':search_type
+    'type':kwargs_page.get('type')
     })
  
   
@@ -103,33 +131,59 @@ def index( ):
     kwargs_link=kwargs_page.copy()
     if 'dir_num' in kwargs_link:
        kwargs_link.pop('dir_num')
+    if 'pn' in kwargs_link:
+       kwargs_page.pop('pn')
 
-    # print(kwargs_page,kwargs_link)
+   
     return render_template('index.html',endpoint='index',kwargs_link =kwargs_link,kwargs_page=kwargs_page,**data)
     
-     
-  
+    
+@app.route('/media/<value>',methods=['GET', 'POST'])
+def media(value):
+    kwargs=dict()
+    
+    # 旧数据提取
+    old_args=url_args(request.referrer)
+    kwargs.update(old_args)
+    kwargs['pn']=1
+    kwargs['type']=value
+    
+    # args_add=['kw','like','dir_num']
+    # for key in args_add:
+    #     if request.args.get(key):
+    #             kwargs[key]=request.args.get(key)
+                 
+    url=url_for('index',**kwargs )
+    return redirect( url)
+
+    
+def url_args(url):
+    # url参数键值对
+    r=dict()
+    query_string =  unquote(urlparse(url).query)
+    # 解析查询字符串中的键值对参数
+    query_params = parse_qs(query_string)
+    for key, value in query_params.items():
+        r[key]=value[0]
+    return r
+
 def item_vis(item):
     # 数据数据添加列 更直观
     item.vsize=f'{item.size//1024**2}MiB'
     # 特定文件指定缩略图名
-    if item.type=='video':
-        item.hashname=f'{item.id}.gif'
-    elif item.type=='img':
-        item.hashname=f'{item.id}.jpg'
+    if item.type=='video' or item.type=='img':
+        # c=dbm.session.query(IdPath).filter_by(id=item.id).first()
+        c=app.config['data'].get(item.id)
+        if c:
+            item.hashname=c 
     else:
         item.hashname=f'{item.id}'
-    if '水果派' in item.path:
-        item.hashname=f'{item.id}.jpg'
-
+ 
     if item.tag and item.tag.like:
         item.is_like=True
-
+    if not Path(item.path).suffix in item.name:
+        item.name+=Path(item.path).suffix
     return item
-
-
- 
-
  
 @app.route('/log/<string:op>')
 @app.route('/log/<int:id>/<string:op>')
@@ -197,20 +251,21 @@ def old_page():
 def func_vue( ):
     return render_template('vue.html',now=datetime.now())
 
-def filter_data(like='',dir_num='',type='',kw=''):
+def meida_query_data(data):
     # 过滤数据
     base=File.query 
     # 目录筛选
     dirs=''
     # 喜欢
-    if like:  
-        base=base.filter(File.tag!=None )
-        base.join(Tag,File.tag).order_by(Tag.utime.desc())
+    if data.get('like'):  
+        base=base.filter(File.tag!=None  )
+        base=base.join(Tag).filter(Tag.tag!='del').order_by(File.type.desc(),Tag.utime.desc())
+        
 
     # 路径模式
     dirs_data=[]
-    if dir_num  :  
-        dir_num=int(dir_num)
+    if  data.get('dir_num') :  
+        dir_num=int(data.get('dir_num') )
         if dir_num==0 or dir_num==-1:
             item=Dir.query.order_by(Dir.level).first()
         else:
@@ -244,15 +299,21 @@ def filter_data(like='',dir_num='',type='',kw=''):
             base=base.filter(File.dir==request_path)
 
     # 类型字筛选
+    type=data.get('type') 
     if   type and type!='all':
         base=base.filter(File.type==type) 
     # 关键词筛选
-    if   kw:
-        # base=base.filter(multi_ruledb(search_kw))
-        t=kw if len(kw)>2 else kw+' '+kw
-        multi_ruledb
-        # base=base.filter(File.path.like('%{}%'.format(search_kw)))
-        base=base.whooshee_search(t)
+    if   data.get('kw'):
+        s=data.get('kw')
+        mul=1024**2
+        if 'size>' in s:
+            n=s.replace('size>','')
+            base=base.filter(File.size>int(n)*mul)
+        elif 'size<' in s:
+            n=s.replace('size<','')
+            base=base.filter(File.size<int(n)*mul)
+        else:
+            base=base.filter(multi_ruledb(data.get('kw')))
     return base,dirs_data
  
 
@@ -268,7 +329,8 @@ def detail(id):
    
     tags=[i[0] for i in db.session.query(distinct(Tag.tag) ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).all()]
     item=item_vis(item)
-
+    dir=db.session.query(Dir).filter(Dir.path==item.dir).first()
+    item.dirobj=dir
     return render_template('detail.html',post=item,form=tf,tags=tags)
      
 

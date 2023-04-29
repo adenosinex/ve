@@ -13,7 +13,53 @@
     {%endif%}
     <br>
 </div>
+<hr>
+<p>进入</p>
 <a href="/toplog" class="toplog">收藏网址</a>
+<a href="/?dir_num=-1" class="dir">目录</a>
+<a href="/?like=True" class="dir">喜欢</a>
+ <hr>
+<p>筛选</p>
+<a href="">test</a>
+<form method="POST" class="form-inline" id="fform">
+    {% for field in fform %}
+      <div class="form-group mx-2 mb-3">
+        {{ field.label(class="mr-2") }}
+        {{ field( ) }}
+      </div>
+    {% endfor %}
+     
+  </form>
+ 
+<hr>
+<script>
+    const form = document.getElementById('fform')
+    function sendGetRequest(url) {
+  return axios.get(url)
+    .then(function(response) {
+      // 返回响应数据，在调用此函数时可对其进行处理
+      return response.data;
+    })
+    .catch(function(error) {
+      console.log('请求失败: ', error);
+    });
+}
+
+form.addEventListener('change', (event) => {
+    const items=form.elements.media_type
+    let checkitem;
+    items.forEach((item)=>{
+        if (item.checked){
+            checkitem=item
+            
+        }
+    })
+    let url='/media/'+checkitem.value
+    // sendGetRequest(url)
+    clickVirtualA(url)
+  
+})
+</script>
 <!-- 展示列表 -->
 <div class="post-tabs">
     {%if pages and spend_time%} <h1>获取数据{{pages}}  db耗时：{{spend_time}} {%if type%}类型：{{type}}  {%endif%}</h1>{%endif%}
@@ -23,7 +69,7 @@
     <a href={{url_for(endpoint, dir_num = dirs_data['current'].id, **kwargs_link)}}>当前目录：{{dirs_data['current'].path}}</a>
     {% for i in dirs_data['dirs'] %}
        
-    <li  class="col col-4 ">
+    <li  class="col  ">
         <a href={{url_for(endpoint, dir_num = i.id, **kwargs_link)}}>{{i.vpath}}</a>
     </li>
      {% endfor %}

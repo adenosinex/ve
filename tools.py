@@ -1,14 +1,17 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os,re,subprocess,hashlib  
 import sqlite3
-from urllib.parse import urlparse,parse_qs
+from urllib.parse import urlparse,parse_qs,unquote
 from pathlib import Path
 import time,os
 from progress.bar import Bar
 from moviepy  import editor
 from PIL import Image
+from moviepy.video.io.VideoFileClip import VideoFileClip
 # from base.mytools import *
  
+ 
+
 class Txt_Ana:
     # 文本分析
     def __init__(self) -> None:
@@ -348,8 +351,7 @@ def movefile_bydict(args, func, desc='rename',reverse=False):
     print(f'{desc} 实际任务 len:{len(arg)}/{len(args)}')
     if not arg:
         return
-    if not reverse:
-        PickleM().set_auto(arg, name=f'{desc}_bydict')
+    
      
     def f(i):
         try:
@@ -363,10 +365,9 @@ def movefile_bydict(args, func, desc='rename',reverse=False):
             s='失败数目 {}->{}'.format(i[0], i[1]) 
             return [1,s]
 
-    ret=multi_thread(arg_list=arg, func=f, desc=desc, pool_size=1)
+    ret=multi_threadpool(args=arg, func=f, desc=desc, pool_size=1)
     ss=[i[1] for i in ret if i[0]==1]
-    if ss:
-        PickleM().set_auto('\n'.join(ss),'rename error')
+    
     ret=[i[0] for i in ret]
     print(f'error:{sum(ret)}/{len(arg)}')
     
@@ -578,6 +579,18 @@ class SmallFile:
         except:
             return
 
+    def shot_jpg(self,src,dst,ss_rat=0.2  ):
+        try:
+            # 打开要截取缩略图的视频文件
+            video = VideoFileClip(src)
+            thumbnail = video.get_frame(t=int(video.duration*ss_rat))  # 截取时间为10s处的缩略图
+            im=Image.fromarray(thumbnail)
+            im.thumbnail((1080,1080))
+            im=im.convert('RGB')
+            im.save(dst,'JPEG')
+        except:
+            return
+        
     def shot_gif(self,src,dst,ss_rat=0.2 ,t=1):
         # ss_rat 开始时间 百分比 归一 
         # 时间
@@ -590,12 +603,13 @@ class SmallFile:
         out, err = output.communicate()
         ss=int(re.findall('\d+',out)[0])*ss_rat
         r=subprocess.Popen([exe,'-y','-ss',str(ss),'-t','1' ,'-i',str(src),'-r','15','-vf','scale=-1:360',str(dst) ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # ffmpeg -i a.mp4 -ss 00:00:01 -t 3 -vf scale=320:-1 -r 5 -f gif - | gifsicle --optimize=3 --delay=6 > output.gif
         pass
 
 def f():
     src=r"X:\库\视频\dy like\7214442324271713571.mp4"
     dst=r'C:\Users\Zin\Videos\Captures\a.gif'
-    shot_gif(src,dst,  )
+ 
     print('end')
      
     # VideoM().shot_gif(i,base.joinpath(Path(i).name).with_suffix('.gif'),t='20%' )

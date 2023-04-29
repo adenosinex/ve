@@ -36,7 +36,10 @@
     <!-- 文件信息 -->
     <h1>ctime:{{ post.ctime}} 
         <br> size:{{ post.vsize}} <br> 文件名:{{post.name }}<br> </h1>
-    <p> 路径:{{post.path}}</p>
+    <h1> 位置:{{post.path}} </h1>
+    <h1> <a href="/?dir_num={{post.dirobj.id}}">目录:{{post.dir}}</a></h1>
+     
+
     <p>快捷添加tag</p>
     {% for tag in tags %}
         <a href="/tag/{{post.id}}?tag={{tag}}" class="tag">{{tag}}</a>  

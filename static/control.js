@@ -208,6 +208,8 @@ class DraggableImage {
 /* <div id="fullscreen-container"   >
     <img id="fullscreen-image">
   </div> */
+
+// 点击查看图片
 class showImg {
     constructor() {
         // this.container = document.getElementById('fullscreen-container');
@@ -243,7 +245,7 @@ class showImg {
 
         // 设置 ESC 键退出全屏模式
         document.addEventListener('keyup', (event) => {
-            if (event.key === 27)
+            if (event.key === "Escape")
                 that.closeFullscreen();
                 }
         );
@@ -271,16 +273,16 @@ class showImg {
 
   
 // 预览节点 点击详情
-let previews = document.querySelectorAll('.preview')
+let previewsItems = document.querySelectorAll('.preview')
 // 点击弹出查看图片查看
 let imgshow = new showImg()
-previews.forEach((node) => {
+previewsItems.forEach((node) => {
     // node.addEventListener('click', (event) => {
     let img = node.querySelector('img')
     if (img)
         img.addEventListener('click', function () {
             // 图片放大 视频查看详情
-            if(img.src.includes('jpg'))
+            if(img.className.includes('img'))
             imgshow.showFullscreen('/file/' + node.dataset.id);
             else
             location.href='/detail/'+ReId.exec(img.src)
@@ -295,12 +297,12 @@ previews.forEach((node) => {
 
 // // 本地存储预览id
 let previewsList, previewsDict={} ,previewsDictName,previewsDictLink;
-if (previews.length > 5) {
+if (previewsItems.length!=0 ) {
     // id api 字典
     previewsDictName = {};
     previewsDictLink = {};
     previewsList = new Array();
-    previews.forEach (  (node) => {
+    previewsItems.forEach (  (node) => {
         let id = node.dataset.id;
         previewsDictLink[id] = '/detail/' + id
         previewsDictName[id] = node.dataset.name
@@ -384,12 +386,12 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
         axios.get(node.href)
             .then(function (response) {
                 if (funcSuccess(response.data))
-                    node.style.backgroundColor = 'green'
+                    node.style.backgroundColor = 'rgb(247 150 150)'
                 else
-                node.style.backgroundColor = 'white'
+                node.style.backgroundColor = '#d0d0d0'
             })
             .catch(function (error) {
-                node.style.backgroundColor = 'white'
+                node.style.backgroundColor = '#d0d0d0'
             })
     }
     )
@@ -829,8 +831,105 @@ function urlGet(node) {
 
 }
 
+// async function downloadZipFromUrls(fileList, zipFileName) {
+//     const getFileBlob = async (url) => {
+//       const response = await fetch(url);
+//       if (!response.ok) {
+//         throw new Error("获取数据失败.");
+//       }
+//       return await response.blob();
+//     };
+  
+//     const zip = new JSZip();
+//     try {
+//       for (const fileInfo of fileList) {
+//         const fileBlob = await getFileBlob(fileInfo.url);
+//           // Zip 文件中的文件名称
+//         zip.file(fileInfo.filename, fileBlob, { binary: true });
+//       }
+  
+//       const blob = await zip.generateAsync({ type: "blob" });
+//       const url = URL.createObjectURL(blob);
+  
+//       const a = document.createElement("a");
+//       a.style.display = "none";
+//       a.href = url;
+//       a.download = `${zipFileName}.zip`;
+//       document.body.appendChild(a);
+//       a.click();
+//     } catch (error) {
+//       console.error(error.message);
+//     } finally {
+//       URL.revokeObjectURL(url);
+//       document.body.removeChild(a);
+//     }
+//   }
+  
+async function downloadZipFromUrls(fileList) { 
+    const getFileBlob = async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("获取数据失败.");
+      }
+      return await response.blob();
+    };
+    
+    const zip = new JSZip();
+  
+    try {
+      for (const fileInfo of fileList) {
+        const fileBlob = await getFileBlob(fileInfo.url);
+        zip.file(fileInfo.filename, fileBlob, { binary: true });
+      }
+  
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+  
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = "files.zip";
+      document.body.appendChild(a);
+      a.click();
+    } catch (error) {
+      console.error(error.message);
+    } finally {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+  }
+  
 
+if (previewsItems.length!=0){
+    // 下载所有 item
+    let container = document.createElement('div')
+    let downAll = document.createElement('button')
+    downAll.textContent = '下载所有'
+    container.appendChild(downAll)
+    
+    let insertObj = document.querySelector('.post-tabs')
+    insertObj.insertBefore(container, insertObj.children[0])
+        $(downAll).click(() => {
+            // alert('下载所有')
+            let files=[]
+            previewsItems.forEach((node) => {
+                var name = node.dataset.name
+                var url = window.location.origin + '/file/'+node.dataset.id
+                downloadfile(url,name)
+                // let t={
+                //     filename: node.dataset.name,
+                //     url: window.location.origin + '/file/'+node.dataset.id
+                //     }
+                //     files.push(t)
+    
+            })
+              
+            // downloadZipFromUrls(files, "myFiles");
+        
+            alert('下载完毕')
+        })
 
+}
 // 音频链接
 let musics = document.querySelectorAll('audio')
 let musicSrcs = []
@@ -849,15 +948,13 @@ if (musics.length > 0) {
 
     let playNext = document.createElement('button')
     playNext.textContent = '下一首'
-    let downAll = document.createElement('button')
-    downAll.textContent = '下载所有'
+    
 
     let tipNow = document.createElement('span')
     tipNow.textContent = '1.正在播放 ' + musics[0].dataset.desc
 
     container.appendChild(display_audio)
     container.appendChild(playNext)
-    container.appendChild(downAll)
     container.appendChild(tipNow)
     let insertObj = document.querySelector('.post-tabs')
     insertObj.insertBefore(container, insertObj.children[0])
@@ -901,17 +998,8 @@ if (musics.length > 0) {
         node.style.backgroundColor = 'red'
     })
 
-    //   下载所有
-    $(downAll).click(() => {
-        alert('下载所有')
-        musics.forEach((node) => {
-            var name = node.dataset.desc
-            var src = window.location.origin + node.getAttribute('src')
-            downloadfile(src, name)
-            //  this.downloadMp3('/api/musics?music_id=1',name);
-
-        })
-    })
+    
+  
 }
 
 
@@ -927,4 +1015,18 @@ function downloadfile(url, name) {
         document.body.removeChild(a)
         window.URL.revokeObjectURL(url);
     });
+}
+function clickVirtualA(url ) {
+    // 点击虚拟链接 只要url
+ 
+        const a = document.createElement('a');
+        document.body.appendChild(a)
+        a.style.display = 'none'
+       
+        a.href = url;
+         
+        a.click();
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url);
+    
 }

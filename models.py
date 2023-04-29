@@ -6,7 +6,7 @@ from datetime import datetime,timedelta
 from itertools import count
 from sqlalchemy import and_,or_,case,distinct,or_,func
 # from sqlalchemy.orm import or_
-from factory import db 
+from factory import * 
 from flask import current_app as app
 import time,re
  
@@ -148,17 +148,20 @@ class FileProcessor:
        
     def process_dyname(self):
         file=self.fileclass
-        if not r'X:\库\视频\dy like' in file.path:
-            return
         id=Path(file.name).stem
-        raw_data=Db_Mani(r'X:/库/code/douyin get/data-dy.db').query_one(f'select id,desc,ctime from raw where id="{id}"')
+        if   r'D:\抖音' in file.path:
+            raw_data=Db_Mani(r'X:/库/dyvideo.db').query_one(f'select id,desc,ctime from videos where id="{id}"')
+        elif   r'X:\库\视频\dy like' in file.path:
+            raw_data=Db_Mani(r'X:/库/code/douyin get/data-dy.db').query_one(f'select id,desc,ctime from raw where id="{id}"')
+        else:
+            return
         if raw_data:
             id,desc,ctime=raw_data
             if not ctime:
                 ctime=0
             if file.name!=desc:
                 file.name,file.ctime=desc,datetime.fromtimestamp(int(ctime))
-                 
+             
                 
 
  
@@ -206,28 +209,6 @@ class InitData:
         db.session.add(item)
         db.session.commit()
 
-
-    def ana_dyname(self):
-        
-        def func_old():
-            t=Db_Mani(r'X:/库/dyvideo.db')
-            sql='select videos.id,videos.desc,authors.nickname,videos.ctime  from videos,authors,heart where videos.id=heart.id and videos.aid=authors.uid'
-            a='@林南学姐· '
-            rdata=t.query(sql)
-            data={i[0]:[f'@{i[2]}·{i[1]}',i[3] ]for i in rdata}
-
-            files=db.session.query(File).filter_by(dir=r'X:\库\DyView\view like').all()
-            c=count(1)
-            def f(i):
-                if data.get(Path(i.path).stem):
-                    i.name,ctime=data.get(Path(i.path).stem)
-                    i.ctime=datetime.fromtimestamp(int(ctime)) 
-                    if next(c)%100==0:
-                        db.session.commit()
-                    return i
-            # [f(i) for i in files ]
-            multi_threadpool(func=f,args=files)
-        
 
  
 
@@ -288,7 +269,7 @@ class InitData:
         files=set(files).difference(old_files)
         cnt_files=db.session.query(File).count()
         # 文件数据
-        multi_threadpool(func=self._index_file,args=files,desc='数据初始化-{}'.format(Path(file_path).name))
+        multi_threadpool(func=self._index_file,args=files,desc='数据初始化-{}'.format(Path(file_path).name) )
         mes1='数据库数据：{}'.format(db.session.query(File).count()-cnt_files)
         print(mes1)
         return mes1
@@ -300,7 +281,7 @@ class InitData:
         dirs_old={i[0] for i in db.session.query( Dir.path ).all()}
         dirs={i[0] for i in db.session.query(distinct(File.dir)).all()}.difference(dirs_old)
         count_dir=db.session.query(Dir).count() 
-        # 添加目录
+        # 添加直接目录
         def f(dirs,is_extra=False):
             for item in dirs:
                 i=Dir(path=item,dir=str(Path(item).parent),level=item.count('\\'),is_extra=is_extra)
@@ -365,7 +346,14 @@ class InitData:
                 self.init_file(p)
         #  生成缩略图
         self.init_dir()
-        self.ana_dyname()
+        
         # self.create_small_file()
 
-        
+
+
+class IdPath(dbm.Model):
+    # 缩略图位置
+    __bind_key__ = 'sqlite'
+    __tablename__ = 'mytable'
+    id = db.Column(db.String(50), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)

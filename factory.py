@@ -13,6 +13,9 @@ from config import config
 db=SQLAlchemy()
 bt=Bootstrap()
 # who=Whooshee()
+ 
+dbm = SQLAlchemy(  )
+
 
 def creat_app(config_name='dev'):
     app=Flask(__name__)
@@ -21,7 +24,14 @@ def creat_app(config_name='dev'):
     db.init_app(app)
     bt.init_app(app)
     # who.init_app(app)
+    app.config['SQLALCHEMY_BINDS'] = {
+        'sqlite': 'sqlite:///:memory:'
+    }
     
+    # 初始化 SQLAlchemy，并指定 bind 参数连接 SQLite3 数据库
+    dbm.init_app(app)
+    with app.app_context():
+        dbm.create_all(bind='sqlite')
     # 注册蓝本
     from blueprint_api import api_bp
     api_bp.static_folder=app.config.get('SMALL_FILE_PATH')
