@@ -82,6 +82,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            
         }
 
         .image-date {
@@ -104,7 +105,10 @@
             color: rgb(24, 25, 28);
             font-size: 15px;
         }
-
+        .caption a p{
+            position: relative;
+            margin: auto;
+        }
         a {
             text-decoration: none;
 
@@ -148,6 +152,7 @@
 
 
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/axios.min.js') }}"></script>
     <script>
         // 鼠标隐藏
         var timer;
@@ -163,8 +168,35 @@
                 });
             }, 2000)
         });
+// axios part
+// a链接后台发送 变色 点击红 成功绿 失败白
+function clickAWithColor(node, funcSuccess = (response) => true) {
+    node.addEventListener('click', (event) => {
+        event.preventDefault()
+        event.stopPropagation()
 
-    
+        node.style.backgroundColor = 'gray'
+        axios.get(node.href)
+            .then(function (response) {
+                if (funcSuccess(response.data))
+                    
+                    node.style.backgroundColor = 'green'
+                else
+                node.style.backgroundColor = 'red'
+            })
+            .catch(function (error) {
+                node.style.backgroundColor = 'red'
+            })
+    }
+    )
+}
+    // 按钮 喜欢操作 get请求
+let likeELements = document.querySelectorAll(".sendLike");
+clickAWithColor
+likeELements.forEach((node) => {
+    clickAWithColor(node)
+})
+
 
     </script>
 

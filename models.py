@@ -4,7 +4,7 @@
  
 from datetime import datetime,timedelta
 from itertools import count
-from sqlalchemy import and_,or_,case,distinct,or_,func
+from sqlalchemy import and_,or_,case,distinct,or_,func,text,desc
 # from sqlalchemy.orm import or_
 from factory import * 
 from flask import current_app as app
@@ -114,9 +114,13 @@ def multi_ruledb( sentens, most=False):
 
 class FileProcessor:
     # 文件索引 自定义信息
-    def __init__(self, file ):
-        self.hashid_file=HashM().sha1_head(file)
+    def __init__(self, file,hash='' ):
+        if hash:
+            self.hashid_file=hash
+        else:
+            self.hashid_file=HashM().sha1_head(file)
         self.file =file
+    
     def get_data_File(self):
         # 初始化，修改数据
         file=self.file 
@@ -146,7 +150,7 @@ class FileProcessor:
             file.ctime=datetime_obj
             
        
-    def process_dyname(self):
+    def process_dyname(self,force=False):
         file=self.fileclass
         id=Path(file.name).stem
         if   r'D:\抖音' in file.path:
@@ -159,7 +163,7 @@ class FileProcessor:
             id,desc,ctime=raw_data
             if not ctime:
                 ctime=0
-            if file.name!=desc:
+            if force or file.name!=desc:
                 file.name,file.ctime=desc,datetime.fromtimestamp(int(ctime))
              
                 
@@ -251,7 +255,46 @@ class InitData:
               
         multi_threadpool(func=f,args=r,desc='生成缩略图jpg gif',pool_size=4 )
 
-    def init_file(self,file_path):
+    def rindex_col(self  ):
+        # 设置字段
+        files=File.query.filter(File.ctime==None).all()
+        def fsetctime(i):
+            if os.path.exists(i.path):
+                i.ctime=datetime.fromtimestamp(os.path.getmtime(i.path))
+                if not i.utime:
+                    i.utime=i.ctime
+                db.session.add(i)
+
+        files=File.query.all()
+        def fchenckpath(i):
+            if not os.path.exists(i.path):
+                i.path='del '+i.path
+                db.session.add(i)
+        multi_threadpool(func=fchenckpath,args=files,desc='再次初始化 字段 '  )
+        db.session.commit()
+     
+    def rinit_file(self,file_path ):
+        # 再次初始化数据 dy
+        # 文件数据与缩略图
+        files=get_files(file_path)
+
+        # 只添加新文件
+        files=db.session.query(File).filter(File.path.like(f'%{file_path}%')).all()
+        cnt_files=db.session.query(File).count()
+        # 文件数据
+        def f(i):
+            a=FileProcessor(i.path,i.id)
+            r=a.get_data_File()
+            i.ctime=r.ctime
+            db.session.add(i)
+            db.session.commit()
+
+        multi_threadpool(func=f,args=files,desc='再次初始化-{}'.format(Path(file_path).name) )
+        mes1='数据库数据：{}'.format(db.session.query(File).count()-cnt_files)
+        print(mes1)
+        return mes1
+    
+    def init_file(self,file_path ):
         # 初始化数据
         # 文件数据与缩略图
         if isinstance(file_path,list):

@@ -11,7 +11,7 @@
     {% endfor %}
 </div>
 {{ macro.pages(pagination, endpoint,kwargs=kwargs_page) }}
-
+ 
 <script>
     // 图片点击替换成播放视频
     let lastPlayVideo;
@@ -26,6 +26,12 @@
             thumbnail.style.display = 'none'
             if (lastPlayVideo && !lastPlayVideo.paused)
                 lastPlayVideo.pause()
+            
+            
+            video.parentElement.requestFullscreen()
+       
+            video.style.setProperty('object-fit', 'contain' );
+  
             video.play();
             lastPlayVideo = video;
             currentNodeIndex = index
@@ -43,14 +49,14 @@
 
 
     }
+  
+
+    var currentNodeIndex = -1;
     const items = document.querySelectorAll('.item-container');
     for (let i = 0; i < items.length; i++) {
         // items[i].addEventListener('click', clickPlay);
         clickPlay(items[i], i)
     }
-
-    var currentNodeIndex = -1;
-
     // 监听页面上的keydown事件
     document.addEventListener('keydown', function (event) {
         let rows = Math.floor(items[0].parentElement.getBoundingClientRect().width / items[0].getBoundingClientRect().width)
@@ -73,8 +79,101 @@
         }
         clickNodeAtIndex(currentNodeIndex);
     });
+    // 获取触摸滑动角度
+class SwipeHandler {
+    constructor() {
+        this.startx = 0;
+        this.starty = 0;
+        this.stime = 0;
+        this.nowr;
 
+        document.addEventListener("touchstart", e => {
+            this.handleTouchStart(e);
+        }, false);
 
+        document.addEventListener("touchend", e => {
+            this.handleTouchEnd(e);
+        }, false);
+    }
+
+    //获得角度
+    getAngle(angx, angy) {
+        return Math.atan2(angy, angx) * 180 / Math.PI;
+    }
+
+    //根据起点终点返回方向 1向上滑动 2向下滑动 3向左滑动 4向右滑动 0点击事件
+    getDirection(startx, starty, endx, endy) {
+        let angx = endx - startx;
+        let angy = endy - starty;
+        let result = 0;
+
+        //如果滑动距离太短
+        if (Math.abs(angx) < 2 && Math.abs(angy) < 2) {
+            return result;
+        }
+
+        let angle = this.getAngle(angx, angy);
+        if (angle >= -135 && angle <= -45) {
+            // 下
+            result = 'down';
+        } else if (angle > 45 && angle < 135) {
+            // 上
+            result = 'up';
+        } else if ((angle >= 135 && angle <= 180) || (angle >= -180 && angle < -135)) {
+            // 左
+            result = 'left';
+        } else if (angle >= -45 && angle <= 45) {
+            // 右
+            result = 'right';
+
+        }
+        return result;
+    }
+
+    handleTouchStart(e) {
+        this.startx = e.touches[0].pageX;
+        this.starty = e.touches[0].pageY;
+        this.stime = new Date().getTime();
+    }
+
+    handleTouchEnd(e) {
+        let endx, endy, now;
+        endx = e.changedTouches[0].pageX;
+        endy = e.changedTouches[0].pageY;
+        now = new Date().getTime();
+        let direction = this.getDirection(this.startx, this.starty, endx, endy);
+
+        let disY = Math.round(Math.abs(endy - this.starty))
+        let sptime = now - this.stime
+        // alert(disY+' time:'+sptime)
+
+        if (sptime > 300 || disY < 150)
+            this.nowr = ''
+        else
+            this.nowr = direction
+        console.log(direction)
+        return direction
+    }
+
+    now() {
+        return this.nowr
+    }
+}
+    const swipeHandler = new SwipeHandler(); // 创建一个滑动事件处理类的实例对象
+    document.addEventListener("touchend", function (e) {
+        let direction = swipeHandler.now();
+        switch (direction) {
+            case 'left': // 左箭头
+                currentNodeIndex--;
+                break;
+            case 'right': // 右箭头
+                currentNodeIndex++;
+                break;
+            default:
+                document.exitFullscreen()
+        }
+        clickNodeAtIndex(currentNodeIndex);
+    })
 
     // 点击指定索引的节点
     function clickNodeAtIndex(index) {
@@ -87,6 +186,8 @@
         items[index].querySelector('video').click();
         items[index].scrollIntoView({ behavior: 'auto' });
     }
+
+   
 
 
 </script>

@@ -18,7 +18,12 @@ class SearchForm(FlaskForm):
 class FilterForm(FlaskForm):
     media_type = RadioField('选择媒体类型',
                             choices=[('video', '视频'), ('img', '图片'),
-                                     ('story', '文字'),('music','音乐')])
+                                     ('story', '文字'),('music','音乐')],render_kw={'class_': 'form-check-inline'})
+    submit = SubmitField('确定' )
+class SortForm(FlaskForm):
+    media_type = RadioField('排序方式',
+                            choices=[('ctime', '创建时间'), ('size', '大小'),
+                                     ('name', '文件名'),('path','路径'),('utime','添加时间')],render_kw={'class': 'form-check-inline'})
     submit = SubmitField('确定' )
      
 class TagForm(FlaskForm):

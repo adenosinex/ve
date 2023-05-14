@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os,re,subprocess,hashlib  
 import sqlite3
@@ -337,12 +338,6 @@ class VideoM:
         except:
             return
  
-       
-   
- 
-
- 
- 
 def movefile_bydict(args, func, desc='rename',reverse=False):
     '''
     根据元组 文件移动/复制 反向撤销操作不记录日志
@@ -606,14 +601,64 @@ class SmallFile:
         # ffmpeg -i a.mp4 -ss 00:00:01 -t 3 -vf scale=320:-1 -r 5 -f gif - | gifsicle --optimize=3 --delay=6 > output.gif
         pass
 
+def backup_tag():
+    # 备份恢复tag
+    src=Db_Mani(r"C:\Users\Zin\Xiaomi Cloud\drive\元数据\数据库\data_explorer.db")
+    dst=Db_Mani(r'X:/库/code/flask explorer/data_explorer.db')
+    data=src.query('select * from tag')
+    print(f'tag数量：{dst.query("select count(*) from tag")}')
+    dst.insm('insert or ignore into tag values(?,?,?,?)',data)
+    print(f'tag数量：{dst.query("select count(*) from tag")}')
+
+def douyin_tag():
+    # 提取tag文件
+    dst=Path(r'X:\库\DyView\get tag')
+    dir_make(dst)
+    dirs=[r'X:\库\视频\dy like',r'X:\库\DyView']
+    db=Db_Mani(r'X:/库/code/flask explorer/data_explorer.db')
+    data=db.query('select tag.tag, file.path from tag,file where file.id=tag.id and tag.tag!="del"')
+    print(f'tag数量：{len(data)}')
+    files=[]
+    for dat in data:
+        for dir in dirs:
+            if dir in dat[1]:
+                files.append(dat)
+    ren=[[i[1],dst.joinpath(i[0]+Path(i[1]).name)] for i in files]
+    hardlink_bydict(ren)
+    
+def list_setitem(listitem,n=3):
+    # 有序字典 提取重复列表前n个
+    unique_dict = OrderedDict()
+    for i in listitem:
+        unique_dict[i] = True
+    r = list(unique_dict.keys())[:n]
+    return  r
+def item_vis(item):
+    # 数据数据添加列 更直观
+    item.vsize=f'{item.size//1024**2}MiB'
+    # 特定文件指定缩略图名
+    if item.type=='video' or item.type=='img':
+        # c=dbm.session.query(IdPath).filter_by(id=item.id).first()
+        c=app.config['data'].get(item.id)
+        if c:
+            item.hashname=c 
+    else:
+        item.hashname=f'{item.id}'
+ 
+    if item.tag and item.tag.like:
+        item.is_like=True
+    if not Path(item.path).suffix in item.name:
+        item.name+=Path(item.path).suffix
+    return item
+ 
 def f():
     src=r"X:\库\视频\dy like\7214442324271713571.mp4"
     dst=r'C:\Users\Zin\Videos\Captures\a.gif'
- 
+    # douyin_tag()
     print('end')
      
     # VideoM().shot_gif(i,base.joinpath(Path(i).name).with_suffix('.gif'),t='20%' )
     
 # 
 VideoM.thumbnail
-# f()
+f()

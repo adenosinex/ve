@@ -20,45 +20,45 @@
 <a href="/?like=True" class="dir">喜欢</a>
  <hr>
 <p>筛选</p>
-<a href="">test</a>
-<form method="POST" class="form-inline" id="fform">
-    {% for field in fform %}
-      <div class="form-group mx-2 mb-3">
-        {{ field.label(class="mr-2") }}
-        {{ field( ) }}
-      </div>
-    {% endfor %}
-     
-  </form>
+{{ wtf.quick_form(filter_form,id="filter_form" ) }}
+
+<p>排序</p>
+{{ wtf.quick_form(sort_form,id="sort_form") }}
  
 <hr>
 <script>
-    const form = document.getElementById('fform')
-    function sendGetRequest(url) {
-  return axios.get(url)
-    .then(function(response) {
-      // 返回响应数据，在调用此函数时可对其进行处理
-      return response.data;
-    })
-    .catch(function(error) {
-      console.log('请求失败: ', error);
-    });
-}
+  function formChange(formid, url){
+    const form = document.getElementById(formid)
+    
+    form.addEventListener('click', (event ) => {
+        const items=form.elements.media_type
+        
+        let checkitem;
+        items.forEach((item)=>{
+            if (item.checked){
+                checkitem=item
+                
+            }
+        })
+         
+    
+      
 
-form.addEventListener('change', (event) => {
-    const items=form.elements.media_type
-    let checkitem;
-    items.forEach((item)=>{
-        if (item.checked){
-            checkitem=item
-            
-        }
+        
+        // sendGetRequest(url)
+        const a = document.createElement('a');
+        document.body.appendChild(a)
+        a.style.display = 'none'
+       
+        a.href = url+'/'+checkitem.value;
+         
+        a.click();
+      
     })
-    let url='/media/'+checkitem.value
-    // sendGetRequest(url)
-    clickVirtualA(url)
-  
-})
+
+  }
+  formChange('filter_form','/media')
+  formChange('sort_form','/sort')
 </script>
 <!-- 展示列表 -->
 <div class="post-tabs">
@@ -66,7 +66,7 @@ form.addEventListener('change', (event) => {
     <!-- 路径链接 -->
     {%if dirs_data%}
     <a href={{url_for(endpoint, dir_num = dirs_data['parent'].id, **kwargs_link)}}>上级目录</a>
-    <a href={{url_for(endpoint, dir_num = dirs_data['current'].id, **kwargs_link)}}>当前目录：{{dirs_data['current'].path}}</a>
+    <a href="/?kw=pathid:{{dirs_data['current'].id}}">获取当前目录下：{{dirs_data['current'].path}}</a>
     {% for i in dirs_data['dirs'] %}
        
     <li  class="col  ">

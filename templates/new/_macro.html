@@ -1,10 +1,8 @@
 {% macro thumbnail(post)%}
-<div class="image-container">
-    {% if post.type=='img' %}
-    <img src={{ url_for('api_bp.static',filename='{}.jpg' .format(post.id))}} id="{{post.id}}">
-        {% elif post.type=='video' %}
-        <img src={{ url_for('api_bp.static',filename='{}.gif' .format(post.id))}}  id="{{post.id}}">
-        {% endif %}
+<div class="image-container preview" id="{{post.id}}">
+   
+    <img src={{ url_for('api_bp.static',filename=post.hashname) }} id="{{post.id}}">
+      
     <video controls preload="metadata" style="display: none;"    >
         <source src="" type="video/mp4"  >
     </video>
@@ -13,8 +11,13 @@
 <div class="caption">
     <a href="/detail/{{post.id}}">
         <p class="image-title" title="{{post.name}}">{{post.name}}</p>
-
     </a>
+    <!-- <a href="/tag/{{post.id}}?tag=del" class='sendLike '>
+        <p class="image-title"  >del</p>
+    </a>
+    <a href="/detail/{{post.id}}?tag=like" class='sendLike '>
+        <p class="image-title"  >like</p>
+    </a> -->
 </div>
 
 {% endmacro %}

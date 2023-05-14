@@ -55,6 +55,10 @@ if __name__=='__main__':
     # SmallFile().shot_jpg( t,p ) 
     # SmallFile().shot_jpg(p,d)
     create_small_file()
+    index_file=r"C:\Users\Zin\Pictures\Saved Pictures\small file\index.cache"
+    if os.path.exists(index_file):
+        os.remove(index_file)
     # a=DyOld()
     # ren=create_small_file(a.get_oldgif)
+    
    

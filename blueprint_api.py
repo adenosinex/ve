@@ -89,6 +89,11 @@ def log_web( ):
 def tag_file(id):
     # id标记文件
     tag=request.args.get('tag')
+    try:
+        pre=re.findall('\d+-',tag)[0]
+        tag=tag.replace(pre,'')
+    except:
+        pass
     item=File.query.filter_by(id=id).first()
     if item:
         if tag=='like':
@@ -96,6 +101,7 @@ def tag_file(id):
             return jsonify({'status':'ok'})
         else:
             r=item.set_tag(tag)
+            return jsonify({'status':'ok'})
         return redirect(request.referrer)
 
 @api_bp.route('/now')

@@ -10,7 +10,7 @@ let ReId = /[A-Z\d]{40}/
 
 let medias = [];
 let tagAttr = {
-    'video': { 'width': '100%', 'controls': 'true', 'autoplay': 'true' },
+    'video': {   'controls': 'true', 'autoplay': 'true' },
     'audio': { 'controls': 'true', 'loop': '' },
     // 'img': { 'width': '100%' }
 }
@@ -382,16 +382,17 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
         event.preventDefault()
         event.stopPropagation()
 
-        node.style.backgroundColor = 'red'
+        node.style.backgroundColor = 'gray'
         axios.get(node.href)
             .then(function (response) {
                 if (funcSuccess(response.data))
-                    node.style.backgroundColor = 'rgb(247 150 150)'
+                    
+                    node.style.backgroundColor = 'green'
                 else
-                node.style.backgroundColor = '#d0d0d0'
+                node.style.backgroundColor = 'red'
             })
             .catch(function (error) {
-                node.style.backgroundColor = '#d0d0d0'
+                node.style.backgroundColor = 'red'
             })
     }
     )
@@ -655,7 +656,7 @@ tagObj.mousemove(function () {
         tagObj.css({
             cursor: 'none'
         });
-    }, 2000)
+    }, 500)
 });
 //   详情页设置添加下一个跳转
 if (location.pathname.includes('detail')) {
@@ -712,8 +713,7 @@ if (location.pathname.includes('detail')) {
     let locida = document.createElement('a')
     locida.href = '#play'
     locida.click()
-
-
+ 
     // 键盘控制下一个
     document.addEventListener('keydown', (e) => {
         switch (e.key) {
@@ -747,7 +747,9 @@ if (location.pathname.includes('detail')) {
         clickAWithColor(node)
     })
     // 标题加索引
-    document.title = index + 1 + ' ' + document.title
+    let perc=(((index+1)/(previewsList.length ))*100)
+    let pre=`${Math.round(perc)}% ${index+1}/${previewsList.length }`
+    document.title = pre + ' ' + document.title
 }
 
 
@@ -898,35 +900,56 @@ async function downloadZipFromUrls(fileList) {
       document.body.removeChild(a);
     }
   }
-  
+  let container = document.createElement('div')
+  container.className='functionContainer'
+  let insertObj = document.querySelector('.post-tabs')
+  insertObj.insertBefore(container, insertObj.children[0])
+
+// 添加功能
+function tabAddItem(item){
+    let container = document.querySelector('.functionContainer')
+    container.appendChild(item)
+    
+}
+
+let downAll = document.createElement('button')
+downAll.textContent = '下一页'
+tabAddItem(downAll)
+    $(downAll).click(() => {
+        const aList = document.querySelectorAll('a'); // 获取所有 a 标签
+aList.forEach(a => { // 遍历所有 a 标签
+  if (a.textContent.trim().indexOf('»') !== -1) {
+    a.click(); // 输出符合条件的 a 标签元素
+  }
+});
+    })
 
 if (previewsItems.length!=0){
     // 下载所有 item
-    let container = document.createElement('div')
     let downAll = document.createElement('button')
     downAll.textContent = '下载所有'
-    container.appendChild(downAll)
-    
-    let insertObj = document.querySelector('.post-tabs')
-    insertObj.insertBefore(container, insertObj.children[0])
+    tabAddItem(downAll)
         $(downAll).click(() => {
             // alert('下载所有')
-            let files=[]
-            previewsItems.forEach((node) => {
-                var name = node.dataset.name
-                var url = window.location.origin + '/file/'+node.dataset.id
-                downloadfile(url,name)
-                // let t={
-                //     filename: node.dataset.name,
-                //     url: window.location.origin + '/file/'+node.dataset.id
-                //     }
-                //     files.push(t)
-    
-            })
-              
-            // downloadZipFromUrls(files, "myFiles");
+            if(window.confirm("下载所有?")){
+                let files=[]
+                previewsItems.forEach((node) => {
+                    var name = node.dataset.name
+                    var url = window.location.origin + '/file/'+node.dataset.id
+                    downloadfile(url,name)
+                    // let t={
+                    //     filename: node.dataset.name,
+                    //     url: window.location.origin + '/file/'+node.dataset.id
+                    //     }
+                    //     files.push(t)
         
-            alert('下载完毕')
+                })
+                  
+                // downloadZipFromUrls(files, "myFiles");
+            
+                alert('下载完毕')
+
+            }
         })
 
 }

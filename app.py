@@ -1,8 +1,11 @@
  
+from collections import OrderedDict
+from flask import g
 from itertools import count
 import pickle
 import re
 import time
+from sqlalchemy import not_
 
 import urllib3
 
@@ -37,21 +40,23 @@ def memory_smallfile(ins=''):
  
     return ins
 
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+
  
 
 with app.app_context():
-        pass
+        pass 
         r=memory_smallfile()
-        r=db.session.query(Tag).all()
-        # watchdog()
-        pass
+         
+        # InitData().rindex_col()
+        pass 
         # InitData().scan_dir(r'X:\库\视频\dy like')
         # InitData().scan_dir(r'X:\库\DyView')
         # InitData().scan_dir(r'D:\备份 万一\ds photo\video')
-        # InitData().scan_dir(r'D:\抖音\view authors')
-        InitData().init_dir 
+        # InitData().scan_dir(r'D:\抖音\mp4\tag')
+        # InitData().scan_dir(r'D:\抖音\mp4\add')
+        InitData().init_file
+        FileProcessor.get_data_File
+        # InitData().rinit_file(r'X:\库\视频\dy like\like')
         FileProcessor.process_dyname
        
 
@@ -67,7 +72,8 @@ def index( ):
         print('log: '+last_url)
     
     sf=SearchForm()
-    ff=FilterForm()
+    filter_form=FilterForm()
+    sort_form=SortForm()
     if sf.validate_on_submit():
         search_kw=sf.search.data.strip() if sf.search.data else ''
         search_type=sf.select.data
@@ -98,7 +104,9 @@ def index( ):
         # 表单预填充
         if kwargs_page.get('type'): 
             sf.select.data=kwargs_page.get('type')
-            ff.media_type.data=kwargs_page.get('type')
+            filter_form.media_type.data=kwargs_page.get('type')
+        if kwargs_page.get('sort'): 
+            sort_form.media_type.data=kwargs_page.get('sort').replace(' desc','').replace(' asc','')
         
         if kwargs_page.get('kw'):
             sf.search.data=kwargs_page.get('kw')
@@ -109,9 +117,13 @@ def index( ):
         pn=int(request.args.get('pn',1))
     # 数据获取处理
     start_time=time.time()
-    base,dirs_data=meida_query_data( kwargs_page)
-    base=base.order_by(File.num)
-    base=base.order_by(File.ctime.desc())
+    base,dirs_data=db_query_data( kwargs_page)
+    
+    # 无参数按添加时间排序
+    if len(kwargs_page)==0 or (len(kwargs_page)==1 and kwargs_page.get('pn')):
+        base=base.order_by(File.utime.desc())
+    else:
+        base=base.order_by(File.ctime.desc())
     pgn=base.paginate(page=pn,per_page=per_page)
     pgn.items=[item_vis(i) for i in pgn.items]
     # 获取元数据与数据
@@ -119,7 +131,8 @@ def index( ):
     data['form']=sf
     data['pagination']=pgn
     data['dirs_data']=dirs_data
-    data['fform']=ff
+    data['filter_form']=filter_form
+    data['sort_form']=sort_form
     data.update({
     'pages':f'{pgn.per_page}/{pgn.total}',
     'spend_time':'{:.3f}毫秒'.format( (time.time()-start_time)*1000),
@@ -132,28 +145,40 @@ def index( ):
     if 'dir_num' in kwargs_link:
        kwargs_link.pop('dir_num')
     if 'pn' in kwargs_link:
+       kwargs_link.pop('pn')
+    if 'pn' in kwargs_page:
        kwargs_page.pop('pn')
 
    
     return render_template('index.html',endpoint='index',kwargs_link =kwargs_link,kwargs_page=kwargs_page,**data)
     
     
+def url_add_args(kw):
+     # url添加参数
+    # 旧数据提取
+    kwargs=url_args(request.referrer)
+    kwargs['pn']=1
+    kwargs.update(kw)
+    url=url_for('index',**kwargs )
+    return url
+
 @app.route('/media/<value>',methods=['GET', 'POST'])
 def media(value):
-    kwargs=dict()
-    
-    # 旧数据提取
-    old_args=url_args(request.referrer)
-    kwargs.update(old_args)
-    kwargs['pn']=1
-    kwargs['type']=value
-    
-    # args_add=['kw','like','dir_num']
-    # for key in args_add:
-    #     if request.args.get(key):
-    #             kwargs[key]=request.args.get(key)
-                 
-    url=url_for('index',**kwargs )
+    # 文件类型筛选
+    url=url_add_args({'type':value})
+    return redirect( url)
+
+flag=False
+@app.route('/sort/<value>',methods=['GET', 'POST'])
+def sort(value):
+    # 文件排序
+    global flag
+    if flag:
+        value+=' desc'
+    else:
+        value+=' asc'
+    flag=not flag
+    url=url_add_args({'sort':value})
     return redirect( url)
 
     
@@ -167,24 +192,7 @@ def url_args(url):
         r[key]=value[0]
     return r
 
-def item_vis(item):
-    # 数据数据添加列 更直观
-    item.vsize=f'{item.size//1024**2}MiB'
-    # 特定文件指定缩略图名
-    if item.type=='video' or item.type=='img':
-        # c=dbm.session.query(IdPath).filter_by(id=item.id).first()
-        c=app.config['data'].get(item.id)
-        if c:
-            item.hashname=c 
-    else:
-        item.hashname=f'{item.id}'
- 
-    if item.tag and item.tag.like:
-        item.is_like=True
-    if not Path(item.path).suffix in item.name:
-        item.name+=Path(item.path).suffix
-    return item
- 
+
 @app.route('/log/<string:op>')
 @app.route('/log/<int:id>/<string:op>')
 def logs(id='',op=''):
@@ -251,7 +259,7 @@ def old_page():
 def func_vue( ):
     return render_template('vue.html',now=datetime.now())
 
-def meida_query_data(data):
+def db_query_data(data):
     # 过滤数据
     base=File.query 
     # 目录筛选
@@ -312,11 +320,49 @@ def meida_query_data(data):
         elif 'size<' in s:
             n=s.replace('size<','')
             base=base.filter(File.size<int(n)*mul)
+        elif 'pathid:' in s:
+            n=s.replace('pathid:','')
+            r=Dir.query.filter_by(id=int(n)).first()
+            base=base.filter(File.path.like(f'%{r.path}%'))
         else:
             base=base.filter(multi_ruledb(data.get('kw')))
+    # 过滤不存在 标记删除
+    base=base.filter(~File.path.startswith('del')).filter(~File.path.startswith('del'))
+    ids=[i.id for i in Tag.query.filter(Tag.tag=='del').all()]
+    base=base.filter(not_(File.id.in_(ids)))
+
+    if data.get('sort'):
+        s=data.get('sort')
+        print(s)
+        base=base.order_by(text(s))
+    else:
+        base=base.order_by(File.num)
+       
+
     return base,dirs_data
  
 
+
+def item_vis(item):
+    # 数据数据添加列 更直观
+    item.vsize=f'{item.size//1024**2}MiB'
+    # 特定文件指定缩略图名
+    if item.type=='video' or item.type=='img':
+        # c=dbm.session.query(IdPath).filter_by(id=item.id).first()
+        c=app.config['data'].get(item.id)
+        if c:
+            item.hashname=c 
+    else:
+        item.hashname=f'{item.id}'
+ 
+    if item.tag and item.tag.like:
+        item.is_like=True
+    if not Path(item.path).suffix in item.name:
+        item.name+=Path(item.path).suffix
+    return item
+ 
+def items_vis(items):
+    return [item_vis(i) for i in items]
 
 @app.route('/detail/<id>',methods=['GET', 'POST'])
 def detail(id):
@@ -326,12 +372,18 @@ def detail(id):
         tag=tf.tag.data
         item.set_tag(tag)
         return redirect(request.referrer)
-   
-    tags=[i[0] for i in db.session.query(distinct(Tag.tag) ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).all()]
+    
+    tags_all_src  =  db.session.query(Tag.tag, db.func.count(Tag.tag).label('cnt')).filter(Tag.tag!=None).group_by(Tag.tag).order_by( desc('cnt')).all()
+    tags_rec_src =[i[0] for i in db.session.query( Tag.tag  ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).limit(15).all()]
+    # tags_rec_src =[i  for i in db.session.query(Tag.tag   ).order_by(Tag.utime.desc()).all()]
+    # 有序字典 提取重复列表前n个
+    tags_rec = list_setitem(tags_rec_src,3)
+
+    tags_all=[f'{i[1]}-{i[0]}' for i in tags_all_src  if i[0]]
     item=item_vis(item)
     dir=db.session.query(Dir).filter(Dir.path==item.dir).first()
     item.dirobj=dir
-    return render_template('detail.html',post=item,form=tf,tags=tags)
+    return render_template('detail.html',post=item,form=tf,tags=tags_rec+tags_all)
      
 
 @app.route('/play/<id>')
@@ -349,6 +401,8 @@ def add_files( ):
         def f( ):
             with app.app_context():
                 InitData().scan_dir(paths)
+                t=Thread(target=lambda :os.system('rungetsmallfile.bat'))
+                t.start()
         a=Thread(target=f )
         a.daemon=True
         a.start()
@@ -395,4 +449,8 @@ def share( ):
     return render_template('share.html',**data)
     
 if __name__=='__main__':
+    
     app.run(port=80,host='0.0.0.0',debug=False)
+    sort
+    db_query_data
+     

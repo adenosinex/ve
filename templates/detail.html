@@ -2,6 +2,7 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% block title %}{{post.name}}-{{post.ctime}}{% endblock %}
 
+ 
 {% block page_content %}
 <div class="page-header">
     <h1>
@@ -24,11 +25,13 @@
     <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.name}}" alt="{{post.name}}"
         preload="metadata" controls='controls'></audio>
     {%elif post.type=='video'%}
+    
     <video src="/file/{{post.id}}" controls  >
         {%if post.sub%}
         <track label="中文" kind="subtitles" srclang="en" src={{ url_for('main_bp.static',filename=post.sub) }} default>
         {%endif %}
     </video>
+ 
     {%elif post.type=='img'%}
     <img src="/file/{{post.id}}" alt={{post.name}}>
     {%endif %}
