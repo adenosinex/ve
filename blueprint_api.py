@@ -69,7 +69,7 @@ def src_file(id):
 @api_bp.route("/toplog")  
 def log_web( ):
     url=request.referrer
-    log=db.session.query(Log).filter_by(url=url).first()
+    log=db.session.query(VisitedPages).filter_by(url=url).first()
     if log:
         if log.is_top:
             log.is_top=None
@@ -78,7 +78,7 @@ def log_web( ):
             log.is_top=True
             mes='success'
     else:
-        log=Log(url=url,is_top=True)
+        log=VisitedPages(url=url,is_top=True)
         mes='success add'
     db.session.add(log)
     db.session.commit()
@@ -101,6 +101,8 @@ def tag_file(id):
             return jsonify({'status':'ok'})
         else:
             r=item.set_tag(tag)
+            if tag=='del':
+                db_query_data.cache_clear()
             return jsonify({'status':'ok'})
         return redirect(request.referrer)
 

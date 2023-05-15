@@ -387,7 +387,7 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
             .then(function (response) {
                 if (funcSuccess(response.data))
                     
-                    node.style.backgroundColor = 'green'
+                    node.style.backgroundColor = '##dee2e6'
                 else
                 node.style.backgroundColor = 'red'
             })

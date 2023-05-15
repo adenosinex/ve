@@ -32,12 +32,12 @@
 {% endmacro %}
 
 {% macro imgview_widget(post) %}
-<div class="preview col col-6 col-xs-6 col-lg-2 " data-id="{{post.id}}" data-name="{{post.name}}">
+<div class="preview col col-6 col-xs-6 col-lg-2 " data-id="{{post.id}}" data-name="{{post.vname}}">
     <div class="card shadow-sm">
     <!-- 图片 -->
     
     {% if post.type=='music'%}
-    <audio src="/file/{{post.id}}" data-desc= "{{post.name}}"  class="  center-block "  data-link="/detail/{{post.id}}" data-id="{{post.id}}"  ></audio>
+    <audio src="/file/{{post.id}}" data-desc= "{{post.vname}}"  class="  center-block "  data-link="/detail/{{post.id}}" data-id="{{post.id}}"  ></audio>
     {% else %}  
     <img src={{ url_for('api_bp.static',filename=post.hashname) }} class="  center-block {{post.type}}" data-link="/detail/{{post.id}}" data-id="{{post.id}}">
     {%endif%}
@@ -46,7 +46,7 @@
         <!-- 文件名 -->
          
         <p class="card-text"> size:{{post.vsize}}  </p>
-        <p class="card-text">{{post.ctime}} name:{{post.name}}  </p>
+        <p class="card-text">{{post.ctime}} name:{{post.vname}}  </p>
         <!-- 形容 -->
         {%if post.kw%}
         <p class="card-text">desc:  {{post.kw   }}</p>

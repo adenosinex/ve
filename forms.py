@@ -7,11 +7,9 @@ from wtforms.validators import DataRequired, Length, Email, Regexp
 
  
 class SearchForm(FlaskForm):
-    search = StringField('Search')
-    select=SelectField('类别',choices=[('video','视频'),('img','图片'), ('music','音乐'), ('story','小说'), ('all','所有'), ('none','') ],default='none' )
-    most_data=BooleanField(label='最多')
-    # dir=BooleanField(label='目录')
-    like=BooleanField(label='喜欢')
+    search = StringField('Search',validators=[DataRequired()])
+    # select=SelectField('类别',choices=[('video','视频'),('img','图片'), ('music','音乐'), ('story','小说'), ('all','所有'), ('none','') ],default='none' )
+   
     # submit = SubmitField('确定',  render_kw={'class': 'btn btn-sm btn-outline-secondary'})
     submit = SubmitField('确定' )
 

@@ -1,6 +1,9 @@
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os,re,subprocess,hashlib  
+from functools import lru_cache
+import os,re,subprocess,hashlib
+from datetime import datetime
+import shutil  
 import sqlite3
 from urllib.parse import urlparse,parse_qs,unquote
 from pathlib import Path
@@ -9,8 +12,20 @@ from progress.bar import Bar
 from moviepy  import editor
 from PIL import Image
 from moviepy.video.io.VideoFileClip import VideoFileClip
-# from base.mytools import *
  
+# from base.mytools import *
+def cal(f):
+    # 函数运行计时
+    from functools import wraps
+
+    @wraps(f)
+    def func(*a, **b):
+        s = time.time()
+        ret = f(*a, **b)
+        print('{} 耗时:{}'.format(f.__name__, time.time()-s))
+        return ret
+    return func
+
  
 
 class Txt_Ana:
@@ -625,7 +640,7 @@ def douyin_tag():
                 files.append(dat)
     ren=[[i[1],dst.joinpath(i[0]+Path(i[1]).name)] for i in files]
     hardlink_bydict(ren)
-    
+
 def list_setitem(listitem,n=3):
     # 有序字典 提取重复列表前n个
     unique_dict = OrderedDict()
@@ -651,14 +666,50 @@ def item_vis(item):
         item.name+=Path(item.path).suffix
     return item
  
+
+class FilesUni:
+    def rename(self,src,dst):
+        # 复制文件 保留元数据，优先硬链接
+        if os.path.exists(dst):
+            return
+        try:
+            os.link(src,dst)
+        except:
+            shutil.copy2(src,dst)
+
+    
+    def files_biggest_drive(self,files):
+        # 文件按盘位分组，返回数据最大的盘符
+        drive_sizes=[(str(i)[0],os.path.getsize(i)) for i in files if os.path.exists(i)]
+        drive_size=dict()
+        for drive,size in drive_sizes:
+            drive_size[drive]=size+drive_size.get(drive,0)
+        drive_size_sortDesc=sorted(drive_size.items(),key=lambda x:x[1],reverse=True)
+        return drive_size_sortDesc[0][0]
+    
+    def files_dst_dir(self,files):
+        # 文件按盘位分组，返回目标路径
+        dst_dir='{}:/collect-view/{}({})'.format(self.files_biggest_drive( files ),datetime.now().strftime("%Y-%m-%d"),len(files))
+        dst_dir=Path(dst_dir)
+        return dst_dir
+
+    def run(self,files):
+        # 多盘位文件，集中到根/collect/y-m-d(num)下 盘位取决于各盘位文件大小
+        dst_dir=self.files_dst_dir(files)
+        dir_make(dst_dir)
+        [self.rename(i,dst_dir.joinpath(Path(i).name)) for i in files]
+         
+ 
+@cal
 def f():
-    src=r"X:\库\视频\dy like\7214442324271713571.mp4"
-    dst=r'C:\Users\Zin\Videos\Captures\a.gif'
-    # douyin_tag()
-    print('end')
+   
+    1
+     
+    # src=r"X:\库\视频\dy like\7214442324271713571.mp4"
+    # dst=r'C:\Users\Zin\Videos\Captures\a.gif'
+    # # douyin_tag()
+    # print('end')
      
     # VideoM().shot_gif(i,base.joinpath(Path(i).name).with_suffix('.gif'),t='20%' )
-    
-# 
-VideoM.thumbnail
+ 
 f()

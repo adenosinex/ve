@@ -17,14 +17,7 @@ app=creat_app('dev2')
 # flask run --port 80 --host 0.0.0.0
 per_page=100
 get_files
-def keep_3day_logs():
-    # 只保留三天的历史记录
-    today = datetime.now()  # 获取当前日期和时间
-    delta = timedelta(days=3)  # 创建一个 timedelta 对象表示过去的三天
-    three_days_ago = today - delta    # 计算出三天前的日期和时间
-    r=db.session.query(Tag ).filter(Tag.utime<three_days_ago ,and_(Tag.like==None,Tag.like==None,)).all()
-    [db.session.delete(i) for i in r]
-    db.session.commit()
+
 
 def memory_smallfile(ins=''):
     print('静态文件索引')
@@ -45,18 +38,11 @@ def memory_smallfile(ins=''):
 
 with app.app_context():
         pass 
-        r=memory_smallfile()
+        rules=memory_smallfile()
          
-        # InitData().rindex_col()
+        DailyTask().run()
         pass 
-        # InitData().scan_dir(r'X:\库\视频\dy like')
-        # InitData().scan_dir(r'X:\库\DyView')
-        # InitData().scan_dir(r'D:\备份 万一\ds photo\video')
-        # InitData().scan_dir(r'D:\抖音\mp4\tag')
-        # InitData().scan_dir(r'D:\抖音\mp4\add')
-        InitData().init_file
-        FileProcessor.get_data_File
-        # InitData().rinit_file(r'X:\库\视频\dy like\like')
+      
         FileProcessor.process_dyname
        
 
@@ -64,71 +50,66 @@ with app.app_context():
 @app.route('/',methods=['GET', 'POST'])
 def index( ):
     # 记录url
-    if not request.full_path in {'/', '/?','/keep' }:
-        # '/?pn=2'
-        last_url =request.url
-        db.session.add(Log(url=last_url ))
-        db.session.commit()
-        print('log: '+last_url)
+    # if not request.full_path in {'/', '/?','/keep' }:
+    #     # '/?pn=2'
+    #     last_url =request.url
+    #     db.session.add(Log(url=last_url ))
+    #     db.session.commit()
+    #     print('log: '+last_url)
     
-    sf=SearchForm()
+    search_form=SearchForm()
     filter_form=FilterForm()
     sort_form=SortForm()
-    if sf.validate_on_submit():
-        search_kw=sf.search.data.strip() if sf.search.data else ''
-        search_type=sf.select.data
-         
-        like=sf.like.data
+    if search_form.validate_on_submit():
+        search_kw=search_form.search.data.strip() if search_form.search.data else ''
         # 表单数据转发get
-        kwargs_page=dict()
+        kwargs_page=dict(request.args)
         kwargs_page['pn']=1
-        if search_type!='none':
-            kwargs_page['type']=search_type
         if search_kw:
             kwargs_page['kw']=search_kw
-        # if is_dir:
-        #     kwargs_page['dir_num']=-1
-        if like:
-            kwargs_page['like']=True
-        # 保留get参数
-        kwargs_page.update(dict(request.args))
+        
 
         return redirect( url_for('index',**kwargs_page ))
     else:
+         
          # 旧数据提取
         kwargs_page=dict()  
         old_args=url_args(request.url)
         kwargs_page.update(old_args)
+         # 文件收集 断点
+        if kwargs_page.get('collect'): 
+            base,dirs_data=db_query_data( tuple(url_args(request.referrer).items()))
+            files_path=[i.path for i in base.all()]
+            dst_dir=FilesUni().files_dst_dir(files_path)
+            flash(f'正在收集:{dst_dir}')
+            def f():
+                FilesUni().run(files_path)
+            Thread(target=f).run()
+            return redirect(request.referrer)# 文件收集
         
- 
         # 表单预填充
         if kwargs_page.get('type'): 
-            sf.select.data=kwargs_page.get('type')
             filter_form.media_type.data=kwargs_page.get('type')
+        
         if kwargs_page.get('sort'): 
             sort_form.media_type.data=kwargs_page.get('sort').replace(' desc','').replace(' asc','')
         
         if kwargs_page.get('kw'):
-            sf.search.data=kwargs_page.get('kw')
+            search_form.search.data=kwargs_page.get('kw')
            
-        if kwargs_page.get('like'):
-            sf.like.data=True
+       
            
         pn=int(request.args.get('pn',1))
     # 数据获取处理
     start_time=time.time()
-    base,dirs_data=db_query_data( kwargs_page)
+    pgn,dirs_data=db_query_data( tuple(kwargs_page.items()),pn,per_page)
+   
+         
     
-    # 无参数按添加时间排序
-    if len(kwargs_page)==0 or (len(kwargs_page)==1 and kwargs_page.get('pn')):
-        base=base.order_by(File.utime.desc())
-    else:
-        base=base.order_by(File.ctime.desc())
-    pgn=base.paginate(page=pn,per_page=per_page)
     pgn.items=[item_vis(i) for i in pgn.items]
     # 获取元数据与数据
     data=dict()
-    data['form']=sf
+    data['form']=search_form
     data['pagination']=pgn
     data['dirs_data']=dirs_data
     data['filter_form']=filter_form
@@ -168,16 +149,16 @@ def media(value):
     url=url_add_args({'type':value})
     return redirect( url)
 
-flag=False
+flag_is_desc=True
 @app.route('/sort/<value>',methods=['GET', 'POST'])
 def sort(value):
     # 文件排序
-    global flag
-    if flag:
+    global flag_is_desc
+    if flag_is_desc:
         value+=' desc'
     else:
         value+=' asc'
-    flag=not flag
+    flag_is_desc=not flag_is_desc
     url=url_add_args({'sort':value})
     return redirect( url)
 
@@ -199,7 +180,7 @@ def logs(id='',op=''):
     # 置顶/删除记录 删除所有/除指定
     if id or op:
         if id   :
-            log=db.session.query(Log).filter_by(id=id).first()
+            log=db.session.query(VisitedPages).filter_by(id=id).first()
             if op=='top':
                 log.utime=datetime.utcnow()
                 if log.is_top:
@@ -209,10 +190,10 @@ def logs(id='',op=''):
             else:
                 db.session.delete(log)
         elif op=='delall':
-            logs=db.session.query(Log).all()
+            logs=db.session.query(VisitedPages).all()
             [db.session.delete(i)for i in logs]
         elif op=='del':
-            logs=db.session.query(Log).filter(or_(Log.is_top==None,Log.is_top==False)).all()
+            logs=db.session.query(VisitedPages).filter(or_(VisitedPages.is_top==None,VisitedPages.is_top==False)).all()
             [db.session.delete(i)for i in logs]
         db.session.commit()
     return redirect(request.referrer) 
@@ -221,8 +202,8 @@ def logs(id='',op=''):
 @app.route('/log')
 def show_logs( ):
     # 历史记录
-    logs=db.session.query(Log).order_by(Log.utime.desc()).limit(30).all()
-    toplogs=db.session.query(Log).filter_by(is_top=True).order_by(Log.utime.desc()).all()
+    logs=db.session.query(VisitedPages).order_by(VisitedPages.utime.desc()).limit(30).all()
+    toplogs=db.session.query(VisitedPages).filter_by(is_top=True).order_by(VisitedPages.utime.desc()).all()
     losgs_set=[i.id for i in toplogs]
     logs=toplogs+[i for i in logs if not i.id in losgs_set]
     index=count(1)
@@ -232,6 +213,7 @@ def show_logs( ):
         i.index=next(index)
         dir_num=parse_qs(urlparse(i.url).query).get('dir_num',' ')[0]
         pn=parse_qs(urlparse(i.url).query).get('pn',' ')[0]
+        kw=parse_qs(urlparse(i.url).query).get('kw',' ')[0]
         name=''
         if dir_num:
             dir_obj=db.session.query(Dir).filter_by(id=dir_num).one_or_none()
@@ -242,6 +224,8 @@ def show_logs( ):
                 name='path:all'
         if pn:
             name+=' pn:'+pn
+        if kw:
+            name+=' kw:'+kw
         i.name=name
         return i
     logs=[f(i) for i in logs]
@@ -249,7 +233,7 @@ def show_logs( ):
 
 @app.route('/keep')
 def old_page():
-    last_url=db.session.query(Log).order_by(Log.utime.desc()).first()
+    last_url=db.session.query(VisitedPages).order_by(VisitedPages.utime.desc()).first()
     if last_url:
         return redirect(last_url.url)
     else:
@@ -259,88 +243,7 @@ def old_page():
 def func_vue( ):
     return render_template('vue.html',now=datetime.now())
 
-def db_query_data(data):
-    # 过滤数据
-    base=File.query 
-    # 目录筛选
-    dirs=''
-    # 喜欢
-    if data.get('like'):  
-        base=base.filter(File.tag!=None  )
-        base=base.join(Tag).filter(Tag.tag!='del').order_by(File.type.desc(),Tag.utime.desc())
-        
 
-    # 路径模式
-    dirs_data=[]
-    if  data.get('dir_num') :  
-        dir_num=int(data.get('dir_num') )
-        if dir_num==0 or dir_num==-1:
-            item=Dir.query.order_by(Dir.level).first()
-        else:
-            item=Dir.query.filter_by(id=dir_num).first()
-        # 目录筛选 文件夹列表第一个为父文件夹
-        if item:
-            request_path=item.path
-            # 根文件夹      
-            if dir_num==-1:
-                print(item.level)
-                dirs=Dir.query.order_by(Dir.path).filter_by( rank=1).all()
-            # 子文件夹
-            else:
-                dirs=Dir.query.filter_by( dir =request_path).all()
-            # 寻找父文件夹
-            pdirs=Dir.query.filter_by( path =item.dir).first()
-            # 顶层文件夹 设为/
-            if not pdirs:
-                pdirs=Dir(id=-1,path='/')
-            
-            def f(i):
-                # 只保留爷目录名 方便查看
-                t=Path(i.path).parent.parent
-                i.vpath=i.path  if dir_num==-1 else i.path.replace(str(t),'')
-                return i
-            dirs_data={
-                'parent':f(pdirs),
-                'current': f(item),
-                'dirs':[ f(i) for i in dirs]
-            }
-            base=base.filter(File.dir==request_path)
-
-    # 类型字筛选
-    type=data.get('type') 
-    if   type and type!='all':
-        base=base.filter(File.type==type) 
-    # 关键词筛选
-    if   data.get('kw'):
-        s=data.get('kw')
-        mul=1024**2
-        if 'size>' in s:
-            n=s.replace('size>','')
-            base=base.filter(File.size>int(n)*mul)
-        elif 'size<' in s:
-            n=s.replace('size<','')
-            base=base.filter(File.size<int(n)*mul)
-        elif 'pathid:' in s:
-            n=s.replace('pathid:','')
-            r=Dir.query.filter_by(id=int(n)).first()
-            base=base.filter(File.path.like(f'%{r.path}%'))
-        else:
-            base=base.filter(multi_ruledb(data.get('kw')))
-    # 过滤不存在 标记删除
-    base=base.filter(~File.path.startswith('del')).filter(~File.path.startswith('del'))
-    ids=[i.id for i in Tag.query.filter(Tag.tag=='del').all()]
-    base=base.filter(not_(File.id.in_(ids)))
-
-    if data.get('sort'):
-        s=data.get('sort')
-        print(s)
-        base=base.order_by(text(s))
-    else:
-        base=base.order_by(File.num)
-       
-
-    return base,dirs_data
- 
 
 
 def item_vis(item):
@@ -358,7 +261,9 @@ def item_vis(item):
     if item.tag and item.tag.like:
         item.is_like=True
     if not Path(item.path).suffix in item.name:
-        item.name+=Path(item.path).suffix
+        item.vname =item.name+ Path(item.path).suffix
+    else:
+        item.vname=item.name
     return item
  
 def items_vis(items):
@@ -451,6 +356,7 @@ def share( ):
 if __name__=='__main__':
     
     app.run(port=80,host='0.0.0.0',debug=False)
-    sort
+    InitData.scan_dir
     db_query_data
+    item_vis
      

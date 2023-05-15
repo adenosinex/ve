@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% block title %}{{post.name}}-{{post.ctime}}{% endblock %}
+{% block title %}{{post.vname}}-{{post.ctime}}{% endblock %}
 
  
+
 {% block page_content %}
 <div class="page-header">
     <h1>
-        {% block subtitle %}
-        {% if post and  post.name%}{{post.name}}
-        {%else%}Hello World!{%endif%}
-        {% endblock %}
+      
+        {{post.vname}}
+        
     </h1>
 </div>
 
@@ -22,7 +22,7 @@
     <!-- 源文件 -->
     <div class="file">
         {%if post.type=='music'%}
-    <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.name}}" alt="{{post.name}}"
+    <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
         preload="metadata" controls='controls'></audio>
     {%elif post.type=='video'%}
     
@@ -33,25 +33,27 @@
     </video>
  
     {%elif post.type=='img'%}
-    <img src="/file/{{post.id}}" alt={{post.name}}>
+    <img src="/file/{{post.id}}" alt={{post.vname}}>
     {%endif %}
     </div>
     <!-- 文件信息 -->
     <h1>ctime:{{ post.ctime}} 
-        <br> size:{{ post.vsize}} <br> 文件名:{{post.name }}<br> </h1>
+        <br> size:{{ post.vsize}} <br> 文件名:{{post.vname }}<br> </h1>
     <h1> 位置:{{post.path}} </h1>
     <h1> <a href="/?dir_num={{post.dirobj.id}}">目录:{{post.dir}}</a></h1>
      
+    <div class="tags">
+        <p>快捷添加tag</p>
+        {% for tag in tags %}
+            <a href="/tag/{{post.id}}?tag={{tag}}" class="tag">{{tag}}</a>  
+        {% endfor %}
 
-    <p>快捷添加tag</p>
-    {% for tag in tags %}
-        <a href="/tag/{{post.id}}?tag={{tag}}" class="tag">{{tag}}</a>  
-    {% endfor %}
+    </div>
     
     </div>
     <hr>
     <!-- 下载链接 -->
-    <a href="/file/{{post.id}}?down=1" download="{{post.name}}">下载</a>
+    <a href="/file/{{post.id}}?down=1" download="{{post.vname}}">下载</a>
 {%endif %}
 {%if form%}
 {{ wtf.quick_form(form,id="tagForm") }}

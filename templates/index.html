@@ -18,6 +18,7 @@
 <a href="/toplog" class="toplog">收藏网址</a>
 <a href="/?dir_num=-1" class="dir">目录</a>
 <a href="/?like=True" class="dir">喜欢</a>
+<a href="/?collect=True" class="dir">收集文件到文件夹</a>
  <hr>
 <p>筛选</p>
 {{ wtf.quick_form(filter_form,id="filter_form" ) }}
@@ -29,10 +30,8 @@
 <script>
   function formChange(formid, url){
     const form = document.getElementById(formid)
-    
     form.addEventListener('click', (event ) => {
         const items=form.elements.media_type
-        
         let checkitem;
         items.forEach((item)=>{
             if (item.checked){
@@ -41,9 +40,6 @@
             }
         })
          
-    
-      
-
         
         // sendGetRequest(url)
         const a = document.createElement('a');
@@ -57,6 +53,7 @@
     })
 
   }
+  // 点击选项执行
   formChange('filter_form','/media')
   formChange('sort_form','/sort')
 </script>
