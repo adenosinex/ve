@@ -8,7 +8,7 @@
     {% for log in logs %}
     <li>
         <!-- 链接 -->
-        {{log.index}} {{log.name}} <a href="{{log.url}}">  {{log.time}} {{log.url}}</a>
+         <a href="{{log.url}}"> {{log.index}} {{log.name}} {{log.vtime}}  </a>
         <!-- 选项 -->
         {% if log.is_top %}
                 <a href="/log/{{log.id}}/top" style= "background-color: crimson ;" >置顶</a>

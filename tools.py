@@ -1,8 +1,10 @@
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
+from itertools import count
 import os,re,subprocess,hashlib
-from datetime import datetime
+import pickle
+from datetime import datetime, timedelta
 import shutil  
 import sqlite3
 from urllib.parse import urlparse,parse_qs,unquote
@@ -618,7 +620,7 @@ class SmallFile:
 
 def backup_tag():
     # 备份恢复tag
-    src=Db_Mani(r"C:\Users\Zin\Xiaomi Cloud\drive\元数据\数据库\data_explorer.db")
+    src=Db_Mani(r"C:\Users\Zin\Downloads\元数据\数据库\data_explorer(1).db")
     dst=Db_Mani(r'X:/库/code/flask explorer/data_explorer.db')
     data=src.query('select * from tag')
     print(f'tag数量：{dst.query("select count(*) from tag")}')
@@ -648,7 +650,8 @@ def list_setitem(listitem,n=3):
         unique_dict[i] = True
     r = list(unique_dict.keys())[:n]
     return  r
-def item_vis(item):
+
+def item_vis(item,app):
     # 数据数据添加列 更直观
     item.vsize=f'{item.size//1024**2}MiB'
     # 特定文件指定缩略图名
@@ -665,9 +668,54 @@ def item_vis(item):
     if not Path(item.path).suffix in item.name:
         item.name+=Path(item.path).suffix
     return item
+
+def url_args(url):
+    # url参数键值对
+    r=dict()
+    query_string =  unquote(urlparse(url).query)
+    # 解析查询字符串中的键值对参数
+    query_params = parse_qs(query_string)
+    for key, value in query_params.items():
+        r[key]=value[0]
+    return r
+
+
+
+
+def item_vis(item,app):
+    # 数据数据添加列 更直观
+    item.vsize=f'{item.size//1024**2}MiB'
+    # 获取缩略图位置
+    hashname=app.config['data'].get(item.id)
+    item.hashname=f'{item.id}' if not hashname else hashname
+    # 添加标记 是否喜欢
+    item.is_like=True if item.tag and item.tag.like else False
+    # 添加文件后缀
+    item.vname =item.name+ Path(item.path).suffix if not Path(item.path).suffix in item.name else item.name
+     
+    return item
  
+def items_vis(items,app):
+    return [item_vis(i,app) for i in items]
+
+def srt2vtt(file ):
+    content = open(file, "r", encoding="utf-8").read()
+    # 替换“,”为“.”
+    content = content.replace(',','.')
+    lines=content.splitlines()
+    newlines=[]
+    for i in range(len(lines)-1):
+        if ':' in lines[i]:
+            newlines.append(lines[i])
+            newlines.append(lines[i+1])
+            newlines.append('\n')
+    content='\n'.join(newlines)
+    content=content.replace('\n\n','\n')
+    content = "WEBVTT\n\n" + content
+    return content
 
 class FilesUni:
+    # 统一文件 就近集中，方便复制
     def rename(self,src,dst):
         # 复制文件 保留元数据，优先硬链接
         if os.path.exists(dst):
@@ -677,7 +725,6 @@ class FilesUni:
         except:
             shutil.copy2(src,dst)
 
-    
     def files_biggest_drive(self,files):
         # 文件按盘位分组，返回数据最大的盘符
         drive_sizes=[(str(i)[0],os.path.getsize(i)) for i in files if os.path.exists(i)]
@@ -698,13 +745,71 @@ class FilesUni:
         dst_dir=self.files_dst_dir(files)
         dir_make(dst_dir)
         [self.rename(i,dst_dir.joinpath(Path(i).name)) for i in files]
-         
- 
+
+def thumbnail_index(ins=''):
+    # 缩略图索引相对路径
+    print('静态文件索引')
+    p=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
+    c=r'C:\Users\Zin\Pictures\Saved Pictures\small file\index.cache'
+    if os.path.exists(c):
+        ins=pickle.load(open(c,'rb'))
+        print('使用缓存')
+    else:
+        ins={Path(i).stem:i.replace(p+'\\','').replace('\\','/') for i in get_files(p)}
+    pickle.dump(ins,open(c,'wb'))
+    return ins
+
+def get_relative_time(timestamp):
+    # 获取时间戳相对简短时间
+    now =  datetime.now()
+    dt=datetime.fromtimestamp(timestamp)
+    delta = now - dt
+    if delta.days > 0:
+        return f'{delta.days}天前'
+    elif delta.seconds < 60:
+        return '刚刚'
+    elif delta.seconds < 60 * 60:
+        minutes = delta.seconds // 60
+        return f'{minutes}分钟前'
+    else:
+        hours = delta.seconds // 3600
+        return f'{hours}小时前'
+
+def create_small_file( func='',max=2820):
+        # 生成缺少的缩略图 函数自定义处理，返回真值掩盖默认操作 
+        smallfile_path=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
+        db=Db_Mani('data_explorer.db')
+        already_ids={Path(i).stem for i in get_files(smallfile_path)}
+        current_datetime =  datetime.now()
+
+        # 计算三天前的日期时间
+        three_days_ago = current_datetime -  timedelta(days=3)
+        data_db=db.query('select id,type,path from file where (type="video" or type="img") and utime>"{}" '.format(three_days_ago))
+        data_db=[i for i in data_db if not i[0] in already_ids]
+        cnt=count()
+        def f(i):
+            id,type,path=i
+            if next(cnt)>max:
+                return
+            if func :
+                r=func(id,type,path)
+                if r:
+                    return r
+            if    type=='img':
+                p=smallfile_path+'/{}.jpg'.format(id)
+                SmallFile().thumbnail( path,p)
+            elif type=='video':
+                p=smallfile_path+'/{}.jpg'.format(id)
+                SmallFile().shot_jpg( path,p ) 
+              
+        ret=multi_threadpool(func=f,args=data_db,desc='生成缩略图jpg gif',pool_size=1 )
+        ret=[i for i in ret if i]
+        return ret
 @cal
 def f():
    
     1
-     
+    # backup_tag()
     # src=r"X:\库\视频\dy like\7214442324271713571.mp4"
     # dst=r'C:\Users\Zin\Videos\Captures\a.gif'
     # # douyin_tag()

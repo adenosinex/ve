@@ -726,13 +726,13 @@ if (location.pathname.includes('detail')) {
     })
     // 左右点击下一个
     // document.documentElement.clientWidth
-   document.addEventListener('click', (e) => {
-        let clickx = e.screenX
-        if (clickx < 200 && pid)
-        prev.click()
-        if (clickx > 1300 && nid)
-        next.click()
-    })
+//    document.addEventListener('click', (e) => {
+//         let clickx = e.screenX
+//         if (clickx < 200 && pid)
+//         prev.click()
+//         if (clickx > 1300 && nid)
+//         next.click()
+//     })
     // 双击下一个
     nclickEvent(2, file, () => {
         next.click()

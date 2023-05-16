@@ -24,14 +24,14 @@ def response_soure(p):
     }
     return [f,206,headers]
  
-# 单个媒体数据 
+# 文件
 @api_bp.route("/share/<id>")  
 def src_share_file(id):
     p=os.getenv('SAVE')+'/'+id
     if os.path.exists(p):
         return Response( open(p,'rb').read(),content_type='application/octet-stream')
     
-
+# 单个媒体数据 
 @api_bp.route("/file/<id>")  
 def src_file(id):
     # id接受查询
@@ -65,7 +65,7 @@ def src_file(id):
             image = f.read()
             return Response(image, mimetype="image/png")
 
-# 收藏网址 
+# 置顶网址 
 @api_bp.route("/toplog")  
 def log_web( ):
     url=request.referrer
@@ -84,7 +84,7 @@ def log_web( ):
     db.session.commit()
     return mes
 
-# 单个媒体数据 
+# 标记文件 
 @api_bp.route("/tag/<id>")  
 def tag_file(id):
     # id标记文件
@@ -106,6 +106,17 @@ def tag_file(id):
             return jsonify({'status':'ok'})
         return redirect(request.referrer)
 
+# 字幕srt->vtt返回
+@api_bp.route('/subtitles/<id>')
+def func_name(id):
+    r=File.query.get(id)
+    srt=Path(r.path ).with_suffix('.srt')
+    if srt.exists():
+        r=Response(srt2vtt(srt), mimetype='text/vtt')
+        return r
+    return 'null'
+
+# 测试当前时间
 @api_bp.route('/now')
 def api_now( ):
     r={

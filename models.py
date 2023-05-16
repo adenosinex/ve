@@ -98,13 +98,20 @@ class VisitedPages(db.Model):
     url = db.Column(db.String)
     is_top = db.Column(db.Boolean)
     utime = db.Column(db.DateTime, default=datetime.now, index=True)
+    @staticmethod
+    def log_url(url):
+        # 记录url
+        if not url in {'/', '/?','/keep' }:
+            # '/?pn=2'
+            last_url =request.url
+            db.session.add(VisitedPages(url=last_url ))
+            db.session.commit()
+            print('VisitedPages: '+last_url)
 
-
-def col_like(sentens):
+def query_col_like(sentens):
     return or_(File.name.like(f'%{sentens}%'), File.path.like(f'%{sentens}%'), File.kw.like(f'%{sentens}%'))
 
-
-def multi_ruledb(sentens, most=False):
+def query_mul_word(sentens, most=False):
     # 空格句子 多条件查询
     most = False
     if 'or' in sentens:
@@ -112,16 +119,16 @@ def multi_ruledb(sentens, most=False):
         most = True
     split_sn = sentens.strip().split(' ')
     if len(split_sn) > 1:
-        rules = [col_like(i) for i in split_sn if i]
+        rules = [query_col_like(i) for i in split_sn if i]
         rule = and_(*rules)
         if most:
             rule = or_(*rules)
     else:
-        rule = col_like(sentens)
+        rule = query_col_like(sentens)
     return rule
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=128)
 def db_query_data(datat, pn, per_page):
     data = {i[0]: i[1] for i in datat}
     # 过滤数据
@@ -131,7 +138,7 @@ def db_query_data(datat, pn, per_page):
     # 喜欢
     if data.get('like'):
         base = base.filter(File.tag != None)
-        base = base.join(Tag).filter(Tag.tag != 'del').order_by(
+        base = base.join(Tag).filter(or_(Tag.like,Tag.tag != 'del')).order_by(
             File.type.desc(), Tag.utime.desc())
     # 路径模式
     dirs_data = []
@@ -189,9 +196,8 @@ def db_query_data(datat, pn, per_page):
             r = Dir.query.filter_by(id=int(n)).first()
             base = base.filter(File.path.like(f'%{r.path}%'))
         else:
-            print(len(base.all()))
-            base = base.filter(multi_ruledb(data.get('kw')))
-            print(len(base.all()))
+            base = base.filter(query_mul_word(data.get('kw')))
+            
 
     # 过滤不存在 标记删除
     base = base.filter(~File.path.startswith('del')).filter(
@@ -205,9 +211,12 @@ def db_query_data(datat, pn, per_page):
         base = base.order_by(text(s))
     else:
         base = base.order_by(File.ctime.desc())
-
-    pgn = base.paginate(page=pn, per_page=per_page)
-    return pgn, dirs_data
+    # 文件集中需求
+    if per_page==-1:
+        return base.all()
+    else:
+        pgn = base.paginate(page=pn, per_page=per_page)
+        return pgn, dirs_data
 
 
 class FileProcessor:
@@ -225,11 +234,11 @@ class FileProcessor:
         file_type = FileType_().media_type(file)
         self.fileclass = File(id=self.hashid_file, name=Path(file).name,
                               size=os.path.getsize(file), type=file_type, path=file, dir=str(Path(file).parent), ctime=datetime.fromtimestamp(os.path.getmtime(file)), utime=datetime.now())
-        self.process_dyname()
-        self.process_appletime()
+        self._process_dyname()
+        self._process_appletime()
         return self.fileclass
 
-    def process_appletime(self):
+    def _process_appletime(self):
         # 录像指定时间
         file = self.fileclass
         if not r'D:\备份 万一\ds photo\MobileBackup' in file.path:
@@ -245,7 +254,7 @@ class FileProcessor:
         if t != file.ctime:
             file.ctime = datetime_obj
 
-    def process_dyname(self, force=False):
+    def _process_dyname(self, force=False):
         file = self.fileclass
         id = Path(file.name).stem
         if r'D:\抖音' in file.path:
@@ -395,6 +404,7 @@ class InitData:
             file_dirsv=file_dirs[0]+'-mul'
         else:
             files = get_files(file_dirs)
+            file_dirsv=file_dirs 
          # 旧文件
         old_files = {i[0] for i in db.session.query(distinct(File.path)).all()}
         # 只添加新文件
@@ -405,7 +415,7 @@ class InitData:
             r = multi_threadpool(func=self.add_file, args=files,
                                 desc='数据初始化-{}'.format(Path(file_dirsv).name))
         db.session.commit()
-        mes1 = '数据库数据：{}'.format(db.session.query(File).count()-cnt_files)
+        mes1 = '文件添加量：{}'.format(db.session.query(File).count()-cnt_files)
         print(mes1)
         return len([i for i in r if i])
 
@@ -428,13 +438,12 @@ class InitData:
                 db.session.add(i)
                 
         f(dirs)
-
         mes1 = '解析目录：{}'.format(db.session.query(Dir).count()-count_dir)
         count_dir = db.session.query(Dir).count()
         # 含有多个子文件夹的文件夹 添加
         import_dirs = db.session.query(Dir.dir, func.count(Dir.dir)).group_by(
             Dir.dir).filter(Dir.is_extra == False).all()
-        dirs = {i[0] for i in import_dirs if i[1] > 2}.difference({i[0] for i in db.session.query(Dir.path).all()})
+        dirs = {i[0] for i in import_dirs if i[1] >= 2}.difference({i[0] for i in db.session.query(Dir.path).all()})
         f(dirs, is_extra=True)
         db.session.commit()
         mes2 = '额外重要目录：{}'.format(db.session.query(Dir).count()-count_dir)
@@ -473,12 +482,11 @@ class InitData:
         self.scan_dir(dir, app)
 
     def scan_dir(self, p):
-
         if isinstance(p, list):
+            r=0
             for i in p:
                 # 初始化新文件夹
-                self.init_files_bydirs(i)
-
+                r+=self.init_files_bydirs(i)
         else:
             # 初始化新文件夹
             r = self.init_files_bydirs(p)
@@ -488,12 +496,7 @@ class InitData:
         # self.create_small_file()
 
 
-class IdPath(dbm.Model):
-    # 缩略图位置
-    __bind_key__ = 'sqlite'
-    __tablename__ = 'mytable'
-    id = db.Column(db.String(50), primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+ 
 
 
 class DailyTask:

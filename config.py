@@ -13,7 +13,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS=True
     T_THUMBNAIL='20%'
     SAVE='C:/Users/Zin/Documents/testdata/upload'
-    FLASKY_DB_QUERY_TIMEOUT = 1  # 设置sql执行超时时间 0.1s
+    FLASKY_DB_QUERY_TIMEOUT = 0.1  # 设置sql执行超时时间 0.1s
     SQLALCHEMY_RECORD_QUERIES = True  # 启用慢查询记录功能
 
 class DevelopmentConfig(Config):
