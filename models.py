@@ -109,7 +109,8 @@ class VisitedPages(db.Model):
             print('VisitedPages: '+last_url)
 
 def query_col_like(sentens):
-    return or_(File.name.like(f'%{sentens}%'), File.path.like(f'%{sentens}%'), File.kw.like(f'%{sentens}%'))
+    return or_(File.name.like(f'%{sentens}%'), File.path.like(f'%{sentens}%'), File.kw.like(f'%{sentens}%'),\
+               Tag.tag.like(f'%{sentens}%'))
 
 def query_mul_word(sentens, most=False):
     # 空格句子 多条件查询
@@ -185,6 +186,7 @@ def db_query_data(datat, pn, per_page):
     if data.get('kw'):
         s = data.get('kw')
         mul = 1024**2
+        base=base.outerjoin(Tag)
         if 'size>' in s:
             n = s.replace('size>', '')
             base = base.filter(File.size > int(n)*mul)
@@ -531,3 +533,4 @@ class DailyTask:
             self.scan_dir()
             with open('daily.cache','w',encoding='utf-8') as f:
                 f.write(today)
+        print('日常任务')

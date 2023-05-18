@@ -9,3 +9,107 @@
  
  
 {% endblock %}
+
+{% block scripts %}
+{{super()}}
+<script>
+     previewsDict = JSON.parse(localStorage.getItem('preLink'));
+        if (previewsDict) {
+          previewsList = previewsDict['index']
+          previewsDictName = previewsDict['name']
+          previewsDictLink = previewsDict['link']
+        }
+
+    //   播放页滑动播放
+ 
+    // 获取id
+    // 获取文件自动播放 设置id
+    let file = $('#play').children()[0]
+    let tagname = file.tagName
+    if (tagname === 'VIDEO' || tagname === 'AUDIO')
+        file.play()
+     // 高度为一屏幕
+    file.height = window.innerHeight;
+
+    let id = ReId.exec(file.src)[0]
+    // 提供链接
+    let target = document.createElement('a')
+    target.href = '/detail/' + id
+    let btn = document.createElement('button')
+    btn.textContent = '详情'
+    btn.className = "btn btn-large btn-primary"
+    target.appendChild(btn)
+
+    let insertObj = $('#play')[0]
+    insertObj.insertBefore(target, insertObj.children[0])
+
+
+
+    // 停止默认滑动效果
+    // document.body.addEventListener('touchmove', function (e) {
+    //     e.preventDefault();
+    // }, { passive: false });
+
+    // 选项决定切换
+    function swithchhandler(direction){
+        id = ReId.exec(file.src)[0]
+        let index = previewsList.indexOf(id)
+        pid = previewsSecureId(index - 1)
+        nid = previewsSecureId(index + 1)
+
+        switch (direction) {
+            case 'down':
+                id = nid
+                break;
+            case 'up':
+                id = pid
+                break;
+            default:
+                return
+        }
+        file.src = '/file/' + id
+        file.scrollIntoView()
+        target.href = '/detail/' + id
+        newUrl = window.location.origin + '/play/' + id
+        history.pushState('', '', newUrl);
+        setTitle()
+        // document.title= previewsDictName[previewsList[index]]
+    }
+    // 自动下一个
+    file.addEventListener('ended', () => { swithchhandler('down') })
+    // 点击播放
+    // file.addEventListener('click',()=>{
+    //     if(file.paused)
+    //     file.play()
+    //     else
+    //     file.pause()
+    // })
+    //手指离开屏幕
+    const swipeHandler = new SwipeHandler(); // 创建一个滑动事件处理类的实例对象
+    document.addEventListener("touchend", function (e) {
+        let direction = swipeHandler.now();
+        swithchhandler(direction)
+
+    }, false);
+    // 滑动结束
+    const mouseDragDirectionTracker = new MouseDragDirectionTracker();
+     document.addEventListener('mouseup', ()=>{
+        let direction=mouseDragDirectionTracker.getDirection()
+        swithchhandler(direction)
+
+     });
+
+ 
+     ntouchEvent(3,document.querySelector('video'),()=>{location.href='/detail/'+id})
+     //  多次触摸切换
+nclickEvent(2,document.querySelector('video'),()=>{
+    var y = event.touches[0].clientX / window.screen.width; 
+        if (y>0.5)
+        swithchhandler('up')
+        else
+        swithchhandler('down')
+})
+ 
+
+</script>
+{% endblock %}

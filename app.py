@@ -1,14 +1,8 @@
  
 from collections import OrderedDict
-from flask import g
 from itertools import count
-import pickle
-import re
 import time
-from flask_sqlalchemy import get_debug_queries
-from sqlalchemy import not_
-
-import urllib3
+ 
 
 from factory import *
 from forms import *
@@ -22,15 +16,12 @@ per_page=100
 with app.app_context():
         app.config['data']=thumbnail_index()
         DailyTask().run()
-        pass 
-        db_query_data
-
- 
-
-VisitedPages
+        # while True:
+        #     files=db.session.query(File).filter(File.dir==r'X:\库\DyView\author-陌生\萌面侠').order_by(func.random()).limit(5).all()
+        #     db_query_data
 
 def collect_file(url):
-    # 收集文件 url参数筛选 后台程序
+    # 收集文件 放在磁盘目录 url参数筛选 后台程序
     data=db_query_data( tuple(url_args(url).items()),-1,-1)
     files_path=[i.path for i in  data]
     dst_dir=FilesUni().files_dst_dir(files_path)
@@ -38,6 +29,17 @@ def collect_file(url):
     def f():
         FilesUni().run(files_path)
     Thread(target=f).run()
+
+def file_getkw(items):
+    relation_text=''
+    for i in  items:
+        t=f'{i.name} {i.path} {i.kw} {i.tag.tag if i.tag else 0} '
+        relation_text+=t
+    return Txt_Ana().topn(relation_text,getn=20,least_repeat=2)
+
+# 返回消耗时间
+def spend_time(start_time):
+    return '{:.3f}毫秒'.format( (time.time()-start_time)*1000)
 
 @app.route('/',methods=['GET', 'POST'])
 def index( ):
@@ -61,22 +63,20 @@ def index( ):
         if kwargs_page.get('collect'): 
             collect_file(request.referrer)
             return redirect(request.referrer)# 文件收集
-        
+      
         # 表单预填充
-        if kwargs_page.get('type'): 
-            filter_form.media_type.data=kwargs_page.get('type')
-        
-        if kwargs_page.get('sort'): 
-            sort_form.media_type.data=kwargs_page.get('sort').replace(' desc','').replace(' asc','')
-        
-        if kwargs_page.get('kw'):
-            search_form.search.data=kwargs_page.get('kw')
+        # if kwargs_page.get('type'): 
+        filter_form.media_type.data=kwargs_page.get('type','')
+        sort_form.media_type.data=kwargs_page.get('sort','').replace(' desc','').replace(' asc','')
+        search_form.search.data=kwargs_page.get('kw','')
         # 默认页码1
         pn=int(request.args.get('pn',1))
     # 数据获取处理
     start_time=time.time()
     pgn,dirs_data=db_query_data( tuple(kwargs_page.items()),pn,per_page)
     pgn.items=items_vis(pgn.items,app)
+    # 搜索词的相关词 
+    kwargs_page['kws']=file_getkw(pgn.items)
     # 获取元数据与数据
     data=dict()
     data['form']=search_form
@@ -86,7 +86,7 @@ def index( ):
     data['dirs_data']=dirs_data
     data.update({
     'pages':f'{pgn.per_page}/{pgn.total}',
-    'spend_time':'{:.3f}毫秒'.format( (time.time()-start_time)*1000),
+    'spend_time':spend_time(start_time),
     'type':kwargs_page.get('type')
     })
 
@@ -102,26 +102,24 @@ def index( ):
    
     return render_template('index.html',endpoint='index',kwargs_link =kwargs_link,kwargs_page=kwargs_page,**data)
     
-
-
-
 @app.route('/media/<value>',methods=['GET', 'POST'])
 def media(value):
     # 文件类型筛选
-    url=url_add_args({'type':value})
+    url=currenturl_add_args({'type':value})
     return redirect( url)
 
-flag_is_desc=True
+@app.route('/kw/<value>',methods=['GET', 'POST'])
+def kwfunc(value):
+    # 关键字筛选
+    url=currenturl_add_args({'kw':value})
+    url=url_remove_args(url,'dir_num')
+    return redirect( url)
+
+ 
 @app.route('/sort/<value>',methods=['GET', 'POST'])
 def sort(value):
     # 文件排序
-    global flag_is_desc
-    if flag_is_desc:
-        value+=' desc'
-    else:
-        value+=' asc'
-    flag_is_desc=not flag_is_desc
-    url=url_add_args({'sort':value})
+    url=currenturl_add_args({'sort':value})
     return redirect( url)
 
 @app.route('/log/<string:op>')
@@ -187,29 +185,85 @@ def old_page():
 @app.route('/vue')
 def func_vue( ):
     return render_template('vue.html',now=datetime.now())
+ 
+last_play_id='0'
+def log_last_play(id):
+    global last_play_id
+    if id=='-1':
+        return redirect('/detail/'+last_play_id)
+    last_play_id=id 
+    return False
 
+def rel_data(item):
+    # 相关作品
+    rel_num=5
+    all_files=[]
+    # 路径
+    files=db.session.query(File).filter(File.dir==item.dir).order_by(func.random()).limit(rel_num).all()
+    files=items_vis(files,app)
+    item.rel_items_path=[(i.id,i.auto_vname) for i in files]
+    all_files+=files
+    # 同类型文件
+    # max_file=File.query.order_by(File.size.desc()).limit(1).first()
+    # # 最小为最大文件0.5
+    # files= File.query.filter(File.type==item.type,File.size>max_file.size*0.5).order_by(func.random()).limit(rel_num).all()
+    # # 最大为最大文件0.1
+    # files+= File.query.filter(File.type==item.type,File.size<max_file.size*0.1).order_by(func.random()).limit(rel_num).all()
+    # 随机
+    files = File.query.filter(File.type==item.type ).order_by(func.random()).limit(rel_num).all()
+    files=items_vis(files,app)
+    item.rel_items_type=[(i.id,i.auto_vname) for i in files]
+    all_files+=files
+    # 大小10%以内,5个
+    ratio=0.1
+    for i in range(1,10):
+        ratio=i/10
+        files=db.session.query(File).filter(File.size.between(item.size*(1-ratio),item.size*(1+ratio))).order_by(func.random()).limit(rel_num).all()
+        if len(files)>=rel_num:
+            break
+    files=items_vis(files,app)
+    item.rel_items_size =[(i.id,i.auto_vname) for i in files]
+    all_files+=files
+    item.rel_num=rel_num
+    item.ratio=ratio
 
+    item.kws=file_getkw(all_files)
+    item.num=len(all_files)
+    return item
 
 @app.route('/detail/<id>',methods=['GET', 'POST'])
 def detail(id):
     # 详情页 文件对象。接受表单设置tag 返回所有tag，文件所在目录
+    if log_last_play(id):
+        return log_last_play(id)
     tf=TagForm()
+    start_time=time.time()
     item=db.session.query(File).filter_by(id=id).first()
     if tf.validate_on_submit():
         tag=tf.tag.data
         item.set_tag(tag)
         return redirect(request.referrer)
     
-    tags_all_src  =  db.session.query(Tag.tag, db.func.count(Tag.tag).label('cnt')).filter(Tag.tag!=None).group_by(Tag.tag).order_by( desc('cnt')).all()
+    tags_all_src  = db.session.query(Tag.tag, db.func.count(Tag.tag).label('cnt')).filter(Tag.tag!=None).group_by(Tag.tag).order_by( desc('cnt')).all()
     tags_all=[f'{i[1]}-{i[0]}' for i in tags_all_src  if i[0]]
     # 有序字典 提取重复列表前n个
-    tags_rec_src =[i[0] for i in db.session.query( Tag.tag  ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).limit(15).all()]
+    tags_rec_src =[i[0] for i in db.session.query( Tag.tag  ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).limit(100).all()]
     tags_rec = list_setitem(tags_rec_src,3)
 
     item=item_vis(item,app)
+   
+    # 目录
     dir=db.session.query(Dir).filter(Dir.path==item.dir).first()
     item.dirobj=dir
-    return render_template('detail.html',post=item,form=tf,tags=tags_rec+tags_all)
+    # 相关作品
+    item =rel_data(item)
+     
+    data={
+        'tags':tags_rec+tags_all,
+        'spend_time':spend_time(start_time),
+        'num':item.num
+    }
+    return render_template('detail.html',post=item,form=tf,**data )
      
 
 @app.route('/play/<id>')
@@ -278,7 +332,16 @@ def share( ):
    
     return render_template('share.html',**data)
 
-def url_add_args(kw):
+def url_remove_args( url,kw):
+     # url添加参数 页码归一
+    # 旧数据提取
+    kwargs=url_args(url)
+    if kwargs.get(kw):
+        kwargs.pop(kw)
+    url=url_for('index',**kwargs )
+    return url
+
+def currenturl_add_args(kw):
      # url添加参数 页码归一
     # 旧数据提取
     kwargs=url_args(request.referrer)
@@ -290,7 +353,5 @@ def url_add_args(kw):
 if __name__=='__main__':
     
     app.run(port=80,host='0.0.0.0',debug=False)
-    InitData.scan_dir
-    db_query_data
-    item_vis
+     
      

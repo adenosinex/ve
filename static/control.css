@@ -1,21 +1,88 @@
-/* a{ padding:0 10px;} */
+nav {
+    margin-bottom: 20px;
+}
 
-a.like{
+img {
+    max-width: 100%;
+    height: auto !important;
+}
+
+.inline {
+    display: inline;
+}
+
+.page-header {
+    padding : 20px;
+    
+}
+
+.comments {
+    margin: 20px 0;
+}
+
+.reply-body {
+    margin-top: 10px;
+}
+
+.sidebar {
+    padding-left: 30px;
+}
+
+footer {
+    margin-top: 30px;
+    padding: 10px 0 40px;
+    color: #999;
+    border-top: 1px solid #e5e5e5;
+}
+
+.page-footer {
+    padding-top: 40px;
+}
+
+.tip { /* from github.com */
+    color: black !important;
+    position: relative;
+    padding: 40px;
+    text-align: center;
+    background-color: #fafbfc;
+    border: 1px solid #e1e4e8;
+    border-radius: 3px;
+    box-shadow: inset 0 0 10px rgba(27, 31, 35, 0.05);
+}
+
+   /* 关键词 */
+   .kws{
+    font-weight: bold; /* 加粗 */
+    margin: 0 5px; /* 左右 5 像素的间隔 */
+  }
+ 
+ a{
+	text-decoration: none;
+ }
+
+.conv 
+a{
+	background-color: #7e7272;
+}
+.kws,.tags a{
+    margin-top: 1.5px;
+	background-color: #fff;
+    color: #945151;
+}
+
+.rel_creation a{
+    margin : 2px;
+	background-color: #fff;
+    color: #945151;
+}
+
+.like{
     background-color: #f2c4c4;
   }
-  .tags a{
-	margin: 8px;
-}
-  video{
-	 width :100% ;
-	 /* height: 100%; */
-  }
-  /* button {
-	margin:0 10px; 
-  } */
-/* video{
-  display: block;
-} */
+ 
+
+  
+ 
   #fullscreen-container {
 	  position: fixed;
 	  top: 0;

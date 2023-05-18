@@ -4,98 +4,284 @@
 
 {% block title %}Gallery{% endblock %}
 {% block page_content %}
- 
+
+  
 <!-- 搜索栏 -->
 <div>
-     <!--示例 {{ wtf.quick_form(form, id='loginform', action='/login', form_type='horizontal', horizontal_columns=('lg',4,4)) }} -->
-    {%if form%}
-    {{ wtf.quick_form(form,id="searchForm") }}
-    {%endif%}
-    <br>
+  <!--示例 {{ wtf.quick_form(form, id='loginform', action='/login', form_type='horizontal', horizontal_columns=('lg',4,4)) }} -->
+  {%if form%}
+  {{ wtf.quick_form(form,id="searchForm") }}
+  {%endif%}
+  <br>
 </div>
-<hr>
-<p>进入</p>
-<a href="/toplog" class="toplog">收藏网址</a>
-<a href="/?dir_num=-1" class="dir">目录</a>
-<a href="/?like=True" class="dir">喜欢</a>
-<a href="/?collect=True" class="dir">收集文件到文件夹</a>
- <hr>
-<p>筛选</p>
-{{ wtf.quick_form(filter_form,id="filter_form" ) }}
 
-<p>排序</p>
-{{ wtf.quick_form(sort_form,id="sort_form") }}
+ {% macro kws(kw) -%}
+    <a href="/kw/{{kw}}" class="btn btn-primary">
+       {{kw}} 
+    </a>
+ {%- endmacro %}
+
+ <div class="kws">
+   <h3>当前页内容关键词</h3>
+    {% for kw in kwargs_page.get('kws') %}
+        {{ kws(kw) }}
+    {% endfor %}
+ </div>
  
+
+
+<div class="conv">
+  <h3>便捷链接</h3>
+ <a href="/toplog" class="btn btn-primary ajaxLink">收藏网址</a>
+ <a href="/?dir_num=-1" class="btn btn-primary">目录</a>
+ <a href="/?like=True" class="btn btn-primary">喜欢</a>
+ <a href="/?collect=True" class="btn btn-primary">收集文件到文件夹</a>
+  
+
+</div>
+ 
+<!-- 条件栏 -->
+<h3>条件筛选</h3>
+<div  class="form-inline query_container row  ">
+ <div class="col-11">
+  <select id="filter_media" title="筛选 "  class="text-left form-select-sm"   >
+    <option value="/media/all">all</option>
+    <option value="/media/video"> video </option>  
+    <option value="/media/img"> img </option>  
+    <option value="/media/music"> music </option>  
+    <option value="/media/story"> story </option>  
+  </select>
+ </div>
+ 
+  <div class="col-1">
+    <select id="sort_media" title="排序"    class="text-right form-select-sm" >
+      <option value="/sort/ctime desc"> 最新 </option>  
+      <option value="/sort/ctime asc"> 最旧 </option>  
+      <option value="/sort/size desc"> 最大 </option>  
+      <option value="/sort/size asc"> 最小 </option>  
+      <option value="/sort/utime desc"> 最近添加 </option>  
+      <option value="/sort/utime asc"> 最早添加 </option>  
+    </select>
+  </div>
+</div>
+
 <hr>
 <script>
-  function formChange(formid, url){
-    const form = document.getElementById(formid)
-    form.addEventListener('click', (event ) => {
-        const items=form.elements.media_type
-        let checkitem;
-        items.forEach((item)=>{
-            if (item.checked){
-                checkitem=item
-                
+  // 下拉栏 跳转
+  function selectClick(id){
+    var selectElement = document.getElementById(id);
+    selectElement.addEventListener('change', function() {
+      var selectedValue = selectElement.value;
+      if (selectedValue) {
+        window.location.href = selectedValue;
+      }
+    });}
+    // 点击筛选
+    selectClick('filter_media')
+    selectClick('sort_media')
+    // url参数 设置下拉栏
+    function selectMediaOption(id,key,prefix) {
+      // 获取下拉列表和当前 URL 中的 media 参数
+      var filterDropdown = document.querySelector(id);
+      var urlParams = new URLSearchParams(window.location.search);
+      var mediaParam = urlParams.get(key);
+
+      // 遍历下拉列表的选项，与参数进行匹配
+      for (var i = 0; i < filterDropdown.options.length; i++) {
+        var option = filterDropdown.options[i];
+        if (option.value.replace(prefix,'') === mediaParam) {
+          // 如果匹配，则将该选项设置为“选中”
+          option.selected = true;
+          break;
+        }
+      }
+    }
+      // url参数设置页面
+      selectMediaOption("#filter_media","type",'/media/');
+      selectMediaOption("#sort_media","sort",'/sort/');
+      // 按键切换
+      document.addEventListener('keydown', function (event) {
+        switch (event.key) {
+          case 'ArrowLeft': // 左箭头
+            location.href=getPrevPageUrl()
+              break;
+          case 'ArrowRight': // 右箭头
+            location.href=getNextPageUrl()
+                break;
+            
             }
-        })
-         
-        
-        // sendGetRequest(url)
-        const a = document.createElement('a');
-        document.body.appendChild(a)
-        a.style.display = 'none'
-       
-        a.href = url+'/'+checkitem.value;
-         
-        a.click();
-      
     })
 
-  }
-  // 点击选项执行
-  formChange('filter_form','/media')
-  formChange('sort_form','/sort')
+   
 </script>
+
+
 <!-- 展示列表 -->
 <div class="post-tabs">
-    {%if pages and spend_time%} <h1>获取数据{{pages}}  db耗时：{{spend_time}} {%if type%}类型：{{type}}  {%endif%}</h1>{%endif%}
-    <!-- 路径链接 -->
-    {%if dirs_data%}
-    <a href={{url_for(endpoint, dir_num = dirs_data['parent'].id, **kwargs_link)}}>上级目录</a>
-    <a href="/?kw=pathid:{{dirs_data['current'].id}}">获取当前目录下：{{dirs_data['current'].path}}</a>
-    {% for i in dirs_data['dirs'] %}
-       
-    <li  class="col  ">
-        <a href={{url_for(endpoint, dir_num = i.id, **kwargs_link)}}>{{i.vpath}}</a>
-    </li>
-     {% endfor %}
-    {%endif%}
-    {% block posts %}
-    <!-- 视频 -->
-    <div class="row row-cols-2 row-cols-sm-2 row-cols-md-5 g-3">
+  {%if pages and spend_time%} <h1>获取数据{{pages}} db耗时：{{spend_time}} {%if type%}类型：{{type}} {%endif%}</h1>{%endif%}
+  <!-- 路径链接 -->
+  {%if dirs_data%}
+  <a href={{url_for(endpoint, dir_num=dirs_data['parent'].id, **kwargs_link)}}>上级目录</a>
+  <a href="/?kw=pathid:{{dirs_data['current'].id}}">获取当前目录下：{{dirs_data['current'].path}}</a>
+  {% for i in dirs_data['dirs'] %}
 
-        {% for post in pagination.items %}
-       {{ macros.imgview_widget( post  ) }}
-        {% endfor %}
+  <li class="col  ">
+    <a href={{url_for(endpoint, dir_num=i.id, **kwargs_link)}}>{{i.vpath}}</a>
+  </li>
+  {% endfor %}
+  {%endif%}
+  {% block posts %}
+  <!-- 视频 -->
+  <div class="row row-cols-2 row-cols-sm-2 row-cols-md-5 g-3">
+
+    {% for post in pagination.items %}
+    {{ macros.imgview_widget( post ) }}
+    {% endfor %}
     <div>
-    
-    </div>
-  
-    {% endblock %}
-     
 
-<!-- 分页列表 -->
-{% if pagination %}
-<div class="pagination">
-    <!-- 链家加搜索参数 -->
+    </div>
+
+    {% endblock %}
+
+
+    <!-- 分页列表 -->
+    {% if pagination %}
+    <div class="pagination">
+      <!-- 链家加搜索参数 -->
       {%if kwargs_page %}
-          {{ macros.pagination_widget(pagination, endpoint,kwargs=kwargs_page) }}
-        {%else %}
-            {{ macros.pagination_widget(pagination, endpoint) }}
-         
-        {%endif %}
-</div>
-{% endif %}
- 
-{% endblock %}
+      {{ macros.pagination_widget(pagination, endpoint,kwargs=kwargs_page) }}
+      {%else %}
+      {{ macros.pagination_widget(pagination, endpoint) }}
+
+      {%endif %}
+    </div>
+    {% endif %}
+
+    {% endblock %}
+    {% block scripts %}
+    {{super()}}
+    <script>
+      // 预览节点 点击详情
+      let previewsItems = document.querySelectorAll('.preview')
+      // 点击弹出查看图片查看
+      let imgshow = new showImg()
+      previewsItems.forEach((node) => {
+        // node.addEventListener('click', (event) => {
+        let img = node.querySelector('img')
+        if (img)
+          img.addEventListener('click', function () {
+            // 图片放大 视频查看详情
+            if (img.className.includes('img'))
+              imgshow.showFullscreen('/file/' + node.dataset.id);
+            else
+              location.href = '/detail/' + ReId.exec(img.src)
+          });
+      })
+
+      // // 本地存储预览id
+      let previewsList, previewsDict = {}, previewsDictName, previewsDictLink;
+      if (previewsItems.length != 0) {
+        // id api 字典
+        previewsDictName = {};
+        previewsDictLink = {};
+        previewsList = new Array();
+        previewsItems.forEach((node) => {
+          let id = node.dataset.id;
+          previewsDictLink[id] = '/detail/' + id
+          previewsDictName[id] = node.dataset.name
+          previewsList.push(id)
+        })
+        previewsDict['index'] = previewsList
+        previewsDict['name'] = previewsDictName
+        previewsDict['link'] = previewsDictLink
+        localStorage.setItem('preLink', JSON.stringify(previewsDict))
+      }
+  
+
+      let container = document.createElement('div')
+container.className='functionContainer'
+let insertObj = document.querySelector('.post-tabs')
+insertObj.insertBefore(container, insertObj.children[0])
+
+// 音频链接
+let musics = document.querySelectorAll('audio')
+let musicSrcs = []
+let musicSrcNode = {}
+for (let i = 0; i < musics.length; i++) {
+    musicSrcs[i] = musics[i].src
+    musicSrcNode[musics[i].src] = musics[i]
+}
+// 添加音乐播放器
+if (musics.length > 0) {
+    let container = document.createElement('div')
+
+    let display_audio = document.createElement('audio')
+    display_audio.src = musics[0].src
+    display_audio.setAttribute('controls', true)
+
+    let playNext = document.createElement('button')
+    playNext.textContent = '下一首'
+    
+
+    let tipNow = document.createElement('span')
+    tipNow.textContent = '1.正在播放 ' + musics[0].dataset.desc
+
+    container.appendChild(display_audio)
+    container.appendChild(playNext)
+    container.appendChild(tipNow)
+    let insertObj = document.querySelector('.post-tabs')
+    insertObj.insertBefore(container, insertObj.children[0])
+    // row.insertBefore(audio,row.children[0])
+
+    function PlayAudio(node) {
+        display_audio.src = node.src
+        let index = musicSrcs.indexOf(display_audio.src)
+        tipNow.textContent = index + ':' + node.dataset.desc
+        document.title = index + ':' + node.dataset.desc
+        display_audio.play()
+    }
+    //   点击项目播放
+    musics.forEach((node) => {
+        $(node.parentNode).click(() => {
+            PlayAudio(node)
+        })
+    })
+    // 获取当前item
+    function nowItem() {
+        let index = musicSrcs.indexOf(display_audio.src)
+        return musicSrcNode[musicSrcs[index]].parentElement.parentElement
+    }
+    //   播放下一首
+    playNext.addEventListener('click', (e) => {
+        let index = musicSrcs.indexOf(display_audio.src)
+        index = index + 1
+        if (index === musicSrcs.length)
+            index = 0
+        PlayAudio(musicSrcNode[musicSrcs[index]])
+
+    })
+    // 自动下一首
+    display_audio.addEventListener('ended', () => {
+        playNext.click()
+    })
+    // 点击定位元素
+    tipNow.addEventListener('click', () => {
+        let node = nowItem()
+        node.scrollIntoView({ behavior: 'auto' })
+        node.style.backgroundColor = 'red'
+    })
+  
+}
+let downAll = document.createElement('button')
+downAll.textContent = '下一页'
+tabAddItem(downAll)
+    $(downAll).click(() => {
+        const aList = document.querySelectorAll('a'); // 获取所有 a 标签
+aList.forEach(a => { // 遍历所有 a 标签
+  if (a.textContent.trim().indexOf('»') !== -1) {
+    a.click(); // 输出符合条件的 a 标签元素
+  }
+});
+    })
+    </script>
+    {% endblock %}

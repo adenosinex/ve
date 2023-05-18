@@ -46,7 +46,7 @@
         <!-- 文件名 -->
          
         <p class="card-text"> size:{{post.vsize}}  </p>
-        <p class="card-text">{{post.ctime}} name:{{post.vname}}  </p>
+        <p class="card-text">{{post.ctime}} name:{{post.auto_vname}}  </p>
         <!-- 形容 -->
         {%if post.kw%}
         <p class="card-text">desc:  {{post.kw   }}</p>
@@ -57,10 +57,10 @@
             <a href='/detail/{{post.id}}'>
               <button type="button" class="btn btn-sm btn-outline-secondary src" >View</button>
             </a>
-            <a href='/tag/{{post.id}}?tag=like' class='sendLike  {%if post.is_like %}  like {%endif%}'>
+            <a href='/tag/{{post.id}}?tag=like' class='ajaxLink  {%if post.is_like %}  like {%endif%}'>
             <button type="button" class="btn btn-sm btn-outline-secondary "  >like</button>
             </a>
-            <a href='/tag/{{post.id}}?tag=del' class='sendLike '>
+            <a href='/tag/{{post.id}}?tag=del' class='ajaxLink '>
             <button type="button" class="btn btn-sm btn-outline-secondary "  >del</button>
             </a>
             <a href='/play/{{post.id}}' target="_blank">

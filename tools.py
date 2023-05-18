@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from itertools import count
@@ -40,7 +40,7 @@ class Txt_Ana:
         txt_stop=r"X:\bufferx\OneDrive\文档\数据库\文本信息\百度停用词表.txt"
         # txt_file=r"C:\Users\Zin\OneDrive\mycode\data\news html.txt"
         #载入停用词 文本数据
-        self.stopwords = [line.strip() for line in FileContent().read_text_line(txt_stop)]
+        self.stopwords = [line.strip() for line in open(txt_stop,'r',encoding='utf-8').readlines()]
         # 手动繁体
         # f=r'C:\Users\xin\OneDrive\文档\文本信息\完全繁体字.txt'
         # words=open(f,encoding='utf-8').read()
@@ -126,7 +126,7 @@ class Txt_Ana:
         text=re.sub('[\da-zA-Z-\.]+','',text )
         return self.topn(text,getn=getn)
 
-    def topn(self,text,len_min=2,getn=4,stopword=True):
+    def topn(self,text,len_min=2,getn=4,least_repeat=1,stopword=True):
         # 文本下频率最高的词 无意义词过滤方法 词性 停用词列表
         # 停用词过滤
         if stopword:
@@ -140,9 +140,9 @@ class Txt_Ana:
             allwords = [ x.word   for x in result if len(x.word) >= len_min and x.flag not in stop_attr]
         # 频率最高的词
         r =Counter(allwords).most_common(getn)
-        top_words=[i[0] for i in r]
-        s=','.join(top_words)
-        return s
+        top_words=[i[0] for i in r if i[1]>=least_repeat]
+       
+        return top_words
 
     def keyin(self ):
         # 查找含关键字的文本
@@ -692,7 +692,13 @@ def item_vis(item,app):
     item.is_like=True if item.tag and item.tag.like else False
     # 添加文件后缀
     item.vname =item.name+ Path(item.path).suffix if not Path(item.path).suffix in item.name else item.name
-     
+    # 文件名过长设置
+    item.auto_vname=Path(item.vname).stem
+    max_name=30
+    if len(item.auto_vname)>max_name:
+        item.auto_vname=item.auto_vname[:max_name]+'...' 
+    item.auto_vname+=Path(item.vname).suffix
+
     return item
  
 def items_vis(items,app):
@@ -808,7 +814,9 @@ def create_small_file( func='',max=2820):
 @cal
 def f():
    
-    1
+    t='收藏网址 目录 喜欢 收集文件到文件夹'
+    # r=Txt_Ana().topn(t)
+    pass
     # backup_tag()
     # src=r"X:\库\视频\dy like\7214442324271713571.mp4"
     # dst=r'C:\Users\Zin\Videos\Captures\a.gif'

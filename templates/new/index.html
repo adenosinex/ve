@@ -190,6 +190,26 @@ class SwipeHandler {
    
 
 
+    if (previewsItems.length!=0){
+    // 下载所有 item
+    let downAll = document.createElement('button')
+    downAll.textContent = '下载所有'
+    tabAddItem(downAll)
+        $(downAll).click(() => {
+            // alert('下载所有')
+            if(window.confirm("下载所有?")){
+                previewsItems.forEach((node) => {
+                    var name = node.dataset.name
+                    var url = window.location.origin + '/file/'+node.dataset.id
+                    downloadfile(url,name)
+                })
+        
+                alert('下载完毕')
+
+            }
+        })
+
+}
 </script>
 
  

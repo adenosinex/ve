@@ -4,17 +4,10 @@
 
 {% block head %}
 {{ super() }}
-<link rel="shortcut icon" href= {{ url_for('static', filename='favicon.ico') }}  type="image/x-icon">
 <link rel="icon" href= {{ url_for('static', filename='favicon.ico') }}  type="image/x-icon">
-<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}"> -->
-<link rel="stylesheet"
-href="{{ url_for('static', filename='css/%s.min.css' % request.cookies.get('theme', 'perfect_blue')) }}"
-type="text/css">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
-
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href= {{ url_for('static', filename='bootstrap.min.css') }}  rel="stylesheet">
 <link href= {{ url_for('static', filename='control.css') }}  rel="stylesheet">
-
 {% endblock %}
 
  
@@ -23,6 +16,7 @@ type="text/css">
   <ul class="nav nav-pills">
     <li class="nav-item"> <a href="/" class="nav-link  ">首页 </a>  </li>
     <li class="nav-item"> <a href="/keep" class="nav-link">继续浏览  </a>  </li>
+    <li class="nav-item"> <a href="/detail/-1" class="nav-link">继续观看  </a>  </li>
     <li class="nav-item">  <a href="/log" class="nav-link" target="_blank">历史记录</a> </li>
     <li class="nav-item">  <a href="/add" class="nav-link">添加文件夹</a> </li>
     <li class="nav-item">  <a href="/share" class="nav-link">文件共享</a> </li>
@@ -48,19 +42,15 @@ type="text/css">
  
 
 {% block scripts %}
- 
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/axios.min.js') }}"></script>
-
 <!-- 引入 JSZip 的 CDN -->
 <script src="https://cdn.bootcdn.net/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-
 <!-- 引入 FileSaver.js 的 CDN -->
 <!-- <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> -->
-
 <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
 <script src={{ url_for('static', filename='control.js') }}></script>
 {% endblock %}
