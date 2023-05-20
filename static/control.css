@@ -80,8 +80,10 @@ a{
     background-color: #f2c4c4;
   }
  
-
-  
+/* 搜索确认按钮 */
+  input#submit {
+    background-color: #d4bcbc;
+}
  
   #fullscreen-container {
 	  position: fixed;

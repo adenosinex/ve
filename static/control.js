@@ -7,7 +7,14 @@
 
 // 获取id正则 获取下一个id
 let ReId = /[A-Z\d]{40}/
-
+function getId(s){
+    try {
+        
+        return ReId.exec(s)[0]
+    } catch (error) {
+        return 0
+    }
+}
 let medias = [];
 let tagAttr = {
     'video': { 'controls': 'true', 'autoplay': 'true' },
@@ -248,6 +255,18 @@ class showImg {
         // 使用方式
         const imagez = new ZoomableImage('#fullscreen-image');
         // const image = new DraggableImage('#fullscreen-image');
+        // 定位上一个图片
+        let imgs=document.querySelectorAll('img')
+         this.indexImgs={}
+        for(let i=0;i<  imgs.length;i++){
+            let next= i+1<i.length?i+1:0;
+            let prev=i-1>=0?i-1:imgs.length-1
+    
+            this.indexImgs[getId(imgs[i].src)]={
+                'next':imgs[next],
+                'prev':imgs[prev],
+            }
+        }
 
 
     }
@@ -277,7 +296,22 @@ class showImg {
 
         // 点击图片不管
         this.image.addEventListener('click', (e) => e.stopPropagation());
-    }
+        this.image.addEventListener('keydown', (e) => {
+            let id =getId(e.target.src)
+            switch (e.key) {
+                case '1':
+                    let pre=this.indexImgs[id].prev
+                    pre.click()
+                    break;
+                case '2':
+                    let next=this.indexImgs[id].next
+                    next.click()
+                   
+                    break;
+                }
+            })
+    } 
+    
 
     closeFullscreen() {
         // 隐藏全屏容器，并清除相应的事件监听器
@@ -329,12 +363,12 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
 }
 // 获取触摸滑动角度
 class SwipeHandler {
-    constructor() {
+    constructor(func) {
         this.startx = 0;
         this.starty = 0;
         this.stime = 0;
         this.nowr;
-
+        this.func=func
         document.addEventListener("touchstart", e => {
             this.handleTouchStart(e);
         }, false);
@@ -356,7 +390,7 @@ class SwipeHandler {
         let result = 0;
 
         //如果滑动距离太短
-        if (Math.abs(angx) < 2 && Math.abs(angy) < 2) {
+        if (Math.abs(angx) < 20  && Math.abs(angy) < 20 ) {
             return result;
         }
 
@@ -369,10 +403,10 @@ class SwipeHandler {
             result = 'up';
         } else if ((angle >= 135 && angle <= 180) || (angle >= -180 && angle < -135)) {
             // 左
-            result = 3;
+            result = 'left';
         } else if (angle >= -45 && angle <= 45) {
             // 右
-            result = 4;
+            result = 'right';
 
         }
         return result;
@@ -400,6 +434,7 @@ class SwipeHandler {
         else
             this.nowr = direction
         console.log(direction)
+        this.func(direction)
         return direction
     }
 
@@ -486,7 +521,7 @@ class MouseDragDirectionTracker {
 }
 
 
-function autoDisappear() {
+function mouseAutoDisappear() {
     // 鼠标在视频上延迟隐藏
     var timer;
     var tagObj = $('video')
@@ -503,7 +538,7 @@ function autoDisappear() {
     });
 
 }
-autoDisappear()
+mouseAutoDisappear()
 
 
 // 输入关键词跳转新搜索页面 当前链接后加参数 去旧参数

@@ -29,7 +29,8 @@ class TagForm(FlaskForm):
     submit = SubmitField('确定' )
 
 class AddDirForm(FlaskForm):
-    path = StringField('路径逗号分隔', validators=[DataRequired()])
+    addpath = StringField('添加路径逗号分隔'  )
+    isdelpath = StringField('检查删除路径逗号分隔' )
     submit = SubmitField('确定' )
 
 class UpFile(FlaskForm):

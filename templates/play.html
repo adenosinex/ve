@@ -1,7 +1,12 @@
 {% extends "base.html" %}
  
 {% block page_content %}
- 
+ <style>
+    video{
+        width: 100%;
+        object-fit: contain;
+    }
+ </style>
 <div id="play">
     <video src="/file/{{id}}" controls>
 </div>

@@ -3,127 +3,154 @@
 {% block title %}{{post.vname}}-{{post.ctime}}{% endblock %}
 {% block head %}
 {{ super() }}
- 
- <style>
-      video {
-     height: 100%;
-    
-    /* object-fit: contain; */
-  }
-    .file{
-        width: 100vh;
-        height: 80vh;
+
+<style>
+    /* html, body {
+  overflow-x: hidden;
+} */
+
+    video,img {
+        width:100%;
+        /* height: 100%; */
+        /* object-fit: contain; */
     }
- </style>
+
+    .file {
+        width: 100%;
+        /* width: 100vh;
+        height: 90vh; */
+    }
+
+    #info {
+        position: relative;
+    }
+</style>
 {% endblock %}
 
 {% block page_content %}
- 
-   
- 
-<div class="conv">
-    <span id="index"  class="display-5">index</span> 
-    <a href="" id="next" class="btn btn-primary">下一个</a>
-    <a href="/play/{{post.id}}" id="playlink" class="btn btn-primary">play</a>
 
-    <a href="" id="prev" class="btn btn-primary">上一个</a>
-</div>
- 
-    <div id="info">
-        <!-- 文件添加信息 -->
-    {%if post.tag%} 
-    <h1>like:{{ post.tag.like}} <br>  tag:{{post.tag.tag }}  </h1>
-    {% endif%}
-    <!-- 标题 -->
+
+
+
+
+
+<!-- 文件添加信息 -->
+{%if post.tag%}
+<h1>like:{{ post.tag.like}} <br> tag:{{post.tag.tag }} </h1>
+{% endif%}
+
+<!-- 标题 -->
+<div id="src">
     <h1>
-        <a href="/file/{{post.id}}?down=1" download="{{post.vname}}"  title="下载"> {{post.vname}}</a>
+        <a href="/file/{{post.id}}?down=1" download="{{post.vname}}" title="下载"> {{post.vname}}</a>
+        <a href="/tag/{{post.id}}?tag=del" class="btn btn-primary ajaxLink setdel" title="delete">del</a>
+        <a href="/tag/{{post.id}}?tag=like" class="btn btn-primary ajaxLink setlike" title="alt+L">like</a>
     </h1>
     <!-- 源文件 -->
     <div class="file">
         {%if post.type=='music'%}
-    <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
-        preload="metadata" controls='controls'></audio>
-    {%elif post.type=='video'%}
-    
-    <video src="/file/{{post.id}}" id='play' controls >
-        {% if post.size>1024**3 %}
-                <track label="中文" kind="subtitles" srclang="cn" src='/subtitles/{{post.id}}'   default>
-        {% endif %}
-        
-    </video>
- 
-    {%elif post.type=='img'%}
-    <img src="/file/{{post.id}}" alt={{post.vname}}>
-    {%endif %}
+        <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
+            preload="metadata" controls='controls'></audio>
+        {%elif post.type=='video'%}
+
+        <video src="/file/{{post.id}}" id='play' controls>
+            {% if post.size>1024**3 %}
+            <track label="中文" kind="subtitles" srclang="cn" src='/subtitles/{{post.id}}' default>
+            {% endif %}
+
+        </video>
+        {%elif post.type=='img'%}
+        <img src="/file/{{post.id}}" alt={{post.vname}}>
+        {%endif %}
     </div>
-    <!-- 文件信息 -->
-    <h1>ctime:{{ post.ctime}} 
-        <br> size:{{ post.vsize}} <br> 文件名:{{post.vname }}<br> </h1>
-    <h1> 位置:{{post.path}} </h1>
-    <h1> <a href="/?dir_num={{post.dirobj.id}}" title="进入目录">目录:{{post.dir}}</a></h1>
-    <h1> db耗时：{{spend_time}}({{num}})  </h1> 
-    {% macro rel_cre(id,name) -%}
-    <a href="/detail/{{id}}" class="btn btn-primary">
-       {{name}} 
-    </a>
- {%- endmacro %}
+</div>
+<div class="conv">
+    <span id="index" class="display-5">index</span>
+    <a href="" id="next" class="btn btn-primary">下一个</a>
+    <a href="/play/{{post.id}}" id="playlink" class="btn btn-primary">play</a>
 
- <div class="rel_creation">
-   <h3>相关作品({{post.rel_num}})</h3>
-   <h4>同目录</h4>
-    {% for id,name in post.rel_items_path %}
-        {{ rel_cre(id,name) }}
-    {% endfor %}
-   <h4>大小相似({% if post.ratio %}
-    {{post.ratio*100|int}})
-   {% endif %}
-   </h4>
-    {% for id,name in post.rel_items_size %}
-        {{ rel_cre(id,name) }}
-    {% endfor %}
-   <h4>同类型随机</h4>
-    {% for id,name in post.rel_items_type %}
-        {{ rel_cre(id,name) }}
-    {% endfor %}
+    <a href="" id="prev" class="btn btn-primary">上一个</a>
 
-    {% macro kws(kw) -%}
-    <a href="/kw/{{kw}}" class="btn btn-primary">
-       {{kw}} 
-    </a>
- {%- endmacro %}
-   <h4>搜索关键词</h4>
-    {% for  name in post.kws %}
-        {{ kws(name) }}
-    {% endfor %}
- </div>
+</div>
+<br>
+<div id="info">
+ 
+    {% if post.dylink %}
+    <h3> <a href={{post.dylink}} title="进入抖音视频页" class="dir" target="_blank">抖音链接</a></h3>
+    {% endif %}
+    <h3>
+        {% for k,v in post.infos.items() %}
+        {{k}}:{{ v}} <br>
+        {% endfor %}
+
+    </h3>
+
+    <h3> <a href="/?dir_num={{post.dirobj.id}}" title="进入目录" class="dir">目录:{{post.dir}}</a></h3>
     <div class="conv">
         <h3>快捷添加tag</h3>
         {% for tag in tags %}
-            <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>  
+        <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>
         {% endfor %}
     </div>
-    
+
+    {% macro rel_cre(id,name) -%}
+    <a href="/detail/{{id}}" class="btn btn-primary">
+        {{name}}
+    </a>
+    {%- endmacro %}
+
+    <div class="rel_creation">
+        <h3>相关作品({{post.rel_num}})</h3>
+        <h4>同目录</h4>
+        {% for id,name in post.rel_items_path %}
+        {{ rel_cre(id,name) }}
+        {% endfor %}
+        <h4>大小相似({% if post.ratio %}
+            {{post.ratio*100|int}})
+            {% endif %}
+        </h4>
+        {% for id,name in post.rel_items_size %}
+        {{ rel_cre(id,name) }}
+        {% endfor %}
+        <h4>同类型随机</h4>
+        {% for id,name in post.rel_items_type %}
+        {{ rel_cre(id,name) }}
+        {% endfor %}
+
+        {% macro kws(kw) -%}
+        <a href="/kw/{{kw}}" class="btn btn-primary">
+            {{kw}}
+        </a>
+        {%- endmacro %}
+        <h4>搜索关键词</h4>
+        {% for name in post.kws %}
+        {{ kws(name) }}
+        {% endfor %}
     </div>
-    <hr>
-    <!-- 下载链接 -->
-    <a href="/file/{{post.id}}?down=1" download="{{post.vname}}" class="btn btn-primary">下载</a>
- 
- 
+
+
+
+</div>
+<hr>
+
+
+
 {{ wtf.quick_form(form,id="tagForm") }}
- 
+
 {% endblock %}
 
 {% block scripts %}
 {{super()}}
 <script>
-     // 定位到元素
-     let locida = document.createElement('a')
-    locida.href = '#info'
-    locida.click()
-    
+    // 定位到元素
+    let locNode = document.createElement('a')
+    locNode.href = '#src'
+    locNode.click()
+  
+
     // 三次触摸切换到play模式
-    ntouchEvent(3,document.querySelector('video'),()=>{location.href='/play/'+id})
-    nclickEvent(3,document.querySelector('video'),()=>{location.href='/play/'+id})
+    ntouchEvent(3, document.querySelector('video'), () => { location.href = '/play/' + id })
+    nclickEvent(3, document.querySelector('video'), () => { location.href = '/play/' + id })
     // 读取列表信息
     previewsDict = JSON.parse(localStorage.getItem('preLink'));
     if (previewsDict) {
@@ -132,14 +159,15 @@
         previewsDictLink = previewsDict['link']
     }
     // 获取文件自动播放 设置id
-    let file = document.querySelector('#play')
-    let tagname = file.tagName
-    if (tagname === 'VIDEO' || tagname === 'AUDIO'){
-        file.play()
+    let video = document.querySelector('#play')
+    video.focus()
+    let tagname = video.tagName
+    if (tagname === 'VIDEO' || tagname === 'AUDIO') {
+        video.play()
         // 播放完自动下一个
-        file.addEventListener('ended', () => { next.click() })
+        video.addEventListener('ended', () => { next.click() })
     }
-   
+
     // 高度为一屏幕
     // file.height = window.innerHeight;
     // 获取id
@@ -147,43 +175,76 @@
     let index = previewsList.indexOf(id)
 
     // 链接
-    nlink = '/detail/' + previewsSecureId(index - 1)
-    plink = '/detail/' + previewsSecureId(index + 1)
- 
- 
+    nlink = '/detail/' + previewsSecureId(index + 1)
+    plink = '/detail/' + previewsSecureId(index - 1)
+
+
     let next = document.querySelector('#next')
-    next.href=nlink
+    next.href = nlink
     let prev = document.querySelector('#prev')
-    prev.href=plink
+    prev.href = plink
     let tip = document.querySelector('#index')
     tip.textContent = index
 
-   
- 
+     
+
     // 键盘控制下一个
+    deleteA = document.querySelector('.setdel')
+    likeA = document.querySelector('.setlike')
+    keepA = document.querySelector('.keepList')
     document.addEventListener('keydown', (e) => {
+        if (event.altKey && event.key === "l")
+            likeA.click()
         switch (e.key) {
             case 'ArrowUp':
                 prev.click()
+                e.preventDefault()
                 break;
             case 'ArrowDown':
                 next.click()
+                e.preventDefault()
+                break;
+            case 'Delete':
+                deleteA.click()
+                break;
+            case "Escape":
+                keepA.click()
+                break;
+            case "ArrowRight":
+                video.currentTime = Math.min(video.currentTime + video.duration * 0.1,video.duration-3);
+                break;
+            case "ArrowLeft":
+                video.currentTime = Math.max(video.currentTime - video.duration * 0.1,0);
+                break;
+            case " ":
+                // 空格暂停 没在焦点接管
+                if (video !== document.activeElement) {
+                    e.preventDefault()
+                    video.paused ? video.play() : video.pause();
+                }
+                break;
         }
+
     })
- 
+
     // 双击下一个
-    nclickEvent(2, file, () => {
+    nclickEvent(2, video, () => {
         next.click()
     })
- 
-
-
-    // 添加tag链接不跳转
-    $('a.tag').each((index, node) => {
-        clickAWithColor(node)
-    })
+//     function handleTouchMove(event) {
+//   var delta = event.changedTouches[0].clientY - event.touches[0].clientY;
+//   var deltaY = Math.max(-1, Math.min(1, delta));
+  
+//   // 将 deltaY 转换为 [-0.5, 0.5] 范围内的数值
+//   var scaledDeltaY = deltaY / window.screen.availHeight * 2;
+//   let t=Math.max(0, Math.min(1, video.volume - scaledDeltaY))
+//   video.volume = t;
+//   console.log(t)
+//   console.log(scaledDeltaY)
+// }
+//     document.addEventListener('touchmove', handleTouchMove, false);
 
     setTitle()
- 
+
 </script>
 {% endblock %}

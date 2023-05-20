@@ -12,6 +12,11 @@
   {%if form%}
   {{ wtf.quick_form(form,id="searchForm") }}
   {%endif%}
+  <div class="tips">
+    <p>搜索技巧  “size>10” 限定大小 单位MB  “pathid:1” 限定特定目录下 </p>
+    <p>收集设置 “num&lt5” 限定个数(包含) “sort:random” 随机排序(多次采集文件数不准确) </p>
+
+  </div>
   <br>
 </div>
 
@@ -56,11 +61,12 @@
   <div class="col-1">
     <select id="sort_media" title="排序"    class="text-right form-select-sm" >
       <option value="/sort/ctime desc"> 最新 </option>  
-      <option value="/sort/ctime asc"> 最旧 </option>  
+      <!-- <option value="/sort/ rand()"> 随机</option>   -->
       <option value="/sort/size desc"> 最大 </option>  
+      <option value="/sort/file.utime desc"> 最近添加 </option>  
+      <option value="/sort/ctime asc"> 最旧 </option>  
       <option value="/sort/size asc"> 最小 </option>  
-      <option value="/sort/utime desc"> 最近添加 </option>  
-      <option value="/sort/utime asc"> 最早添加 </option>  
+      <option value="/sort/file.utime asc"> 最早添加 </option>  
     </select>
   </div>
 </div>
@@ -112,7 +118,8 @@
             }
     })
 
-   
+  
+    
 </script>
 
 

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}{{post.vname}}-{{post.ctime}}{% endblock %}
+{% block head %}
+{{ super() }}
+ 
+ <style>
+     .container {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.video {
+  width: 50%;
+}
+
+.video video {
+  width: 100%;
+  height: auto;
+}
+
+.text {
+  width: 50%;
+  padding: 0 20px;
+}
+
+@media screen and (max-width: 768px) {
+  .video,
+  .text {
+    width: 100%;
+  }
+}
+
+ </style>
+{% endblock %}
+
+{% block page_content %}
+ 
+   
+ 
+<div class="conv">
+    <span id="index"  class="display-5">index</span> 
+    <a href="" id="next" class="btn btn-primary">下一个</a>
+    <a href="/play/{{post.id}}" id="playlink" class="btn btn-primary">play</a>
+
+    <a href="" id="prev" class="btn btn-primary">上一个</a>
+</div>
+ 
+   <div class="container">
+
+   </div>
+        <!-- 文件添加信息 -->
+    {%if post.tag%} 
+    <h1>like:{{ post.tag.like}} <br>  tag:{{post.tag.tag }}  </h1>
+    {% endif%}
+    <!-- 标题 -->
+    <div id="src">
+
+        <h1>
+            <a href="/file/{{post.id}}?down=1" download="{{post.vname}}"  title="下载"> {{post.vname}}</a>
+        </h1>
+        <!-- 源文件 -->
+        <div class="file video">
+            {%if post.type=='music'%}
+        <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
+            preload="metadata" controls='controls'></audio>
+        {%elif post.type=='video'%}
+        
+        <video src="/file/{{post.id}}" id='play' controls >
+            {% if post.size>1024**3 %}
+                    <track label="中文" kind="subtitles" srclang="cn" src='/subtitles/{{post.id}}'   default>
+            {% endif %}
+            
+        </video>
+        {%elif post.type=='img'%}
+        <img src="/file/{{post.id}}" alt={{post.vname}}>
+        {%endif %}
+        </div>
+    </div>
+    <div id="info text">
+    <!-- 文件信息 -->
+    <h3>ctime:{{ post.ctime}} 
+        <br> size:{{ post.vsize}} <br> 文件名:{{post.vname }}<br> </h3>
+    <h3> 位置:{{post.path}} </h3>
+    <h3> <a href="/?dir_num={{post.dirobj.id}}" title="进入目录">目录:{{post.dir}}</a></h3>
+    <h3> db耗时：{{spend_time}}({{num}})  </h3> 
+    {% macro rel_cre(id,name) -%}
+    <a href="/detail/{{id}}" class="btn btn-primary">
+       {{name}} 
+    </a>
+ {%- endmacro %}
+
+ <div class="rel_creation">
+   <h3>相关作品({{post.rel_num}})</h3>
+   <h4>同目录</h4>
+    {% for id,name in post.rel_items_path %}
+        {{ rel_cre(id,name) }}
+    {% endfor %}
+   <h4>大小相似({% if post.ratio %}
+    {{post.ratio*100|int}})
+   {% endif %}
+   </h4>
+    {% for id,name in post.rel_items_size %}
+        {{ rel_cre(id,name) }}
+    {% endfor %}
+   <h4>同类型随机</h4>
+    {% for id,name in post.rel_items_type %}
+        {{ rel_cre(id,name) }}
+    {% endfor %}
+
+    {% macro kws(kw) -%}
+    <a href="/kw/{{kw}}" class="btn btn-primary">
+       {{kw}} 
+    </a>
+ {%- endmacro %}
+   <h4>搜索关键词</h4>
+    {% for  name in post.kws %}
+        {{ kws(name) }}
+    {% endfor %}
+ </div>
+    <div class="conv">
+        <h3>快捷添加tag</h3>
+        {% for tag in tags %}
+            <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>  
+        {% endfor %}
+    </div>
+    
+    </div>
+    <hr>
+    <!-- 下载链接 -->
+    <a href="/file/{{post.id}}?down=1" download="{{post.vname}}" class="btn btn-primary">下载</a>
+ 
+ 
+{{ wtf.quick_form(form,id="tagForm") }}
+ 
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
+<script>
+     // 定位到元素
+     let locida = document.createElement('a')
+    locida.href = '#src'
+    locida.click()
+
+    // 三次触摸切换到play模式
+    ntouchEvent(3,document.querySelector('video'),()=>{location.href='/play/'+id})
+    nclickEvent(3,document.querySelector('video'),()=>{location.href='/play/'+id})
+    // 读取列表信息
+    previewsDict = JSON.parse(localStorage.getItem('preLink'));
+    if (previewsDict) {
+        previewsList = previewsDict['index']
+        previewsDictName = previewsDict['name']
+        previewsDictLink = previewsDict['link']
+    }
+    // 获取文件自动播放 设置id
+    let file = document.querySelector('#play')
+    let tagname = file.tagName
+    if (tagname === 'VIDEO' || tagname === 'AUDIO'){
+        file.play()
+        // 播放完自动下一个
+        file.addEventListener('ended', () => { next.click() })
+    }
+   
+    // 高度为一屏幕
+    // file.height = window.innerHeight;
+    // 获取id
+    let id = ReId.exec(location.href)[0]
+    let index = previewsList.indexOf(id)
+
+    // 链接
+    nlink = '/detail/' + previewsSecureId(index - 1)
+    plink = '/detail/' + previewsSecureId(index + 1)
+ 
+ 
+    let next = document.querySelector('#next')
+    next.href=nlink
+    let prev = document.querySelector('#prev')
+    prev.href=plink
+    let tip = document.querySelector('#index')
+    tip.textContent = index
+
+   
+ 
+    // 键盘控制下一个
+    document.addEventListener('keydown', (e) => {
+       
+        switch (e.key) {
+            case 'ArrowUp':
+                prev.click()
+                e.preventDefault()
+                break;
+            case 'ArrowDown':
+                next.click()
+                e.preventDefault()
+        }
+
+    })
+ 
+    // 双击下一个
+    nclickEvent(2, file, () => {
+        next.click()
+    })
+ 
+
+
+    // 添加tag链接不跳转
+    $('a.tag').each((index, node) => {
+        clickAWithColor(node)
+    })
+
+    setTitle()
+ 
+</script>
+{% endblock %}

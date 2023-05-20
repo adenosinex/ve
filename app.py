@@ -8,6 +8,7 @@ from factory import *
 from forms import *
 from models import *
 from tools import *
+
 app=creat_app('dev2')
 # flask run --port 80 --host 0.0.0.0
 per_page=100
@@ -16,12 +17,14 @@ per_page=100
 with app.app_context():
         app.config['data']=thumbnail_index()
         DailyTask().run()
-        # while True:
-        #     files=db.session.query(File).filter(File.dir==r'X:\库\DyView\author-陌生\萌面侠').order_by(func.random()).limit(5).all()
-        #     db_query_data
+        db_query_data
+       
+    
 
 def collect_file(url):
     # 收集文件 放在磁盘目录 url参数筛选 后台程序
+    if 'sort:random' in url:
+        db_query_data.cache_clear()
     data=db_query_data( tuple(url_args(url).items()),-1,-1)
     files_path=[i.path for i in  data]
     dst_dir=FilesUni().files_dst_dir(files_path)
@@ -231,8 +234,12 @@ def rel_data(item):
     item.num=len(all_files)
     return item
 
+@app.route('/detail2/<id>',methods=['GET', 'POST'])
+def detail2(id):
+    return detail(id,is_data=True)
+
 @app.route('/detail/<id>',methods=['GET', 'POST'])
-def detail(id):
+def detail(id,is_data=False):
     # 详情页 文件对象。接受表单设置tag 返回所有tag，文件所在目录
     if log_last_play(id):
         return log_last_play(id)
@@ -248,22 +255,40 @@ def detail(id):
     tags_all=[f'{i[1]}-{i[0]}' for i in tags_all_src  if i[0]]
     # 有序字典 提取重复列表前n个
     tags_rec_src =[i[0] for i in db.session.query( Tag.tag  ).filter(Tag.tag!=None).order_by(Tag.utime.desc()).limit(100).all()]
-    tags_rec = list_setitem(tags_rec_src,3)
+    tags_rec = list_setitem(tags_rec_src,5)
 
     item=item_vis(item,app)
    
     # 目录
     dir=db.session.query(Dir).filter(Dir.path==item.dir).first()
     item.dirobj=dir
+    # 抖音链接
+    id=Path(item.path).stem
+    if len(id)==19 and re.findall('\d{19}',id):
+        item.dylink='https://www.douyin.com/video/'+id
     # 相关作品
     item =rel_data(item)
      
     data={
+        'form':tf,
         'tags':tags_rec+tags_all,
-        'spend_time':spend_time(start_time),
-        'num':item.num
+        
+       
     }
-    return render_template('detail.html',post=item,form=tf,**data )
+    html='detail.html'
+    # 测试数据
+    if is_data:
+        html='detail2.html'
+    # 文件信息
+    item.infos={
+        '创建时间':item.ctime,
+        '大小':item.vsize,
+        '文件名':item.vname,
+        '位置':item.path,
+        'db耗时':f'{spend_time(start_time)}({item.num})',
+
+    }
+    return render_template(html,post=item, **data )
      
 
 @app.route('/play/<id>')
@@ -281,19 +306,28 @@ def back_work(f):
 
 @app.route('/add',methods=['GET', 'POST'])
 def add_files( ):
-    form=AddDirForm()
+    addform=AddDirForm()
+    
     message=''
-    if form.validate_on_submit():
-        d=form.path.data+','
-        paths=[i.strip() for i in d.split(',') if i]
+    if addform.validate_on_submit():
+        if addform.isdelpath.data:
+            def f( ):
+                r=InitData().scan_dir_isdel(addform.isdelpath.data)
+                print(f'标记删除:{r}')
+            back_work(f)
+            flash('正在核对删除')
+
+        elif addform.path.data:
+            d=addform.path.data+','
+            paths=[i.strip() for i in d.split(',') if i]
+            def f( ):
+                InitData().scan_dir(paths)
+                create_small_file()
+            back_work(f)
+            flash('正在添加数据')
+   
         
-        def f( ):
-            InitData().scan_dir(paths)
-            create_small_file()
-        back_work(f)
-        flash('正在添加数据')
-        return redirect('/add')
-    return render_template('add.html',form=form,message=message)
+    return render_template('add.html',form=addform,message=message)
 
 def files_info(files):
     # 遍历文件信息

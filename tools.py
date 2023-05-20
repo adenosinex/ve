@@ -815,8 +815,7 @@ def create_small_file( func='',max=2820):
 def f():
    
     t='收藏网址 目录 喜欢 收集文件到文件夹'
-    # r=Txt_Ana().topn(t)
-    pass
+    
     # backup_tag()
     # src=r"X:\库\视频\dy like\7214442324271713571.mp4"
     # dst=r'C:\Users\Zin\Videos\Captures\a.gif'

@@ -132,8 +132,11 @@ def query_mul_word(sentens, most=False):
 @lru_cache(maxsize=128)
 def db_query_data(datat, pn, per_page):
     data = {i[0]: i[1] for i in datat}
-    # 过滤数据
-    base = File.query
+     # 过滤不存在 标记删除
+    base = File.query.filter(~File.path.startswith('del')).filter(
+        ~File.path.startswith('del'))
+    ids = [i.id for i in Tag.query.filter(Tag.tag == 'del').all()]
+    base = base.filter(not_(File.id.in_(ids)))
     # 目录筛选
     dirs = ''
     # 喜欢
@@ -184,37 +187,46 @@ def db_query_data(datat, pn, per_page):
         base = base.filter(File.type == type)
     # 关键词筛选
     if data.get('kw'):
-        s = data.get('kw')
+        querys = data.get('kw')
         mul = 1024**2
         base=base.outerjoin(Tag)
-        if 'size>' in s:
-            n = s.replace('size>', '')
-            base = base.filter(File.size > int(n)*mul)
-        elif 'size<' in s:
-            n = s.replace('size<', '')
-            base = base.filter(File.size < int(n)*mul)
-        elif 'pathid:' in s:
-            n = s.replace('pathid:', '')
-            r = Dir.query.filter_by(id=int(n)).first()
-            base = base.filter(File.path.like(f'%{r.path}%'))
-        else:
-            base = base.filter(query_mul_word(data.get('kw')))
+        for s in querys.split(' '):
+            if 'size>' in querys:
+                n = querys.replace('size>', '')
+                base = base.filter(File.size > int(n)*mul)
+            elif 'size<' in querys:
+                n = querys.replace('size<', '')
+                base = base.filter(File.size < int(n)*mul)
+            elif 'pathid:' in querys:
+                n = querys.replace('pathid:', '')
+                r = Dir.query.filter_by(id=int(n)).first()
+                base = base.filter(File.path.like(f'%{r.path}%'))
+        kw=re.sub('\w+:\w+','',querys)
+        kw=re.sub('\w+[><]\w+','',kw)
+        if kw:
+            base = base.filter(query_mul_word(kw.strip()))
             
-
-    # 过滤不存在 标记删除
-    base = base.filter(~File.path.startswith('del')).filter(
-        ~File.path.startswith('del'))
-    ids = [i.id for i in Tag.query.filter(Tag.tag == 'del').all()]
-    base = base.filter(not_(File.id.in_(ids)))
-
+    # 排序
     if data.get('sort'):
-        s = data.get('sort')
-        print(s)
-        base = base.order_by(text(s))
+        querys = data.get('sort')
+        print(querys)
+        base = base.order_by(text(querys))
     else:
         base = base.order_by(File.ctime.desc())
+    
+
     # 文件集中需求
+    kw=data.get('kw')
+    # for i in  base.order_by(None).order_by(func.random()).limit(5).all():
+    #     print(i.name)
     if per_page==-1:
+        # 限制数目
+        if kw:
+            if 'sort:random' in kw:
+                base=base.order_by(None).order_by(func.random())
+            limit = re.findall('num<(\d+)',kw)
+            if limit:
+                return  base.limit( int(limit[0]) ).all()
         return base.all()
     else:
         pgn = base.paginate(page=pn, per_page=per_page)
@@ -281,8 +293,9 @@ class InitData:
         db.create_all()
         self.files_path = app.config.get('FILE_PATH')
         self.smallfiles_path = app.config.get('SMALL_FILE_PATH')
+        self.now_hash_id=set()
 
-    def update_file(self, file_class,file_path):
+    def _update_file(self, file_class,file_path):
         # 路径更新
         file_class.path = file_path
         file_class.dir = str(Path(file_path).parent)
@@ -298,10 +311,13 @@ class InitData:
         file_data = FileProcessor(file_path)
         # 尝试获取数据库文件
         hashid = file_data.hashid_file
+        if hashid in self.now_hash_id:
+            return
+        self.now_hash_id.add(hashid)
         old_file_class = File.query.filter_by(id=hashid).first()
         # 有旧文件 更新路径
         if old_file_class:
-            old_file_class = self.update_file(old_file_class,file_path)
+            old_file_class = self._update_file(old_file_class,file_path)
             db.session.add(old_file_class)
         else:
             item = file_data.get_data_File()
@@ -336,26 +352,22 @@ class InitData:
             File).filter_by(num=None).all(), desc='提取数字')
         db.session.commit()
 
-    def create_small_file(self):
-        # 生辰缺少的缩略图
-        ids = {Path(i).stem for i in get_files(self.smallfiles_path)}
-        r = db.session.query(File).filter(
-            or_(File.type == 'video', File.type == 'img')).filter(File.id.notin_(ids))
+    def _check_file_del(self,i):
+            if not os.path.exists(i.path):
+                i.path = 'del '+i.path
+                db.session.add(i)
+                return True
 
-        def f(i):
-            if i.type == 'video':
-                p = self.smallfiles_path+'/{}.gif'.format(i.id)
-                SmallFile().shot_gif(i.path, p)
-            elif i.type == 'img':
-                p = self.smallfiles_path+'/{}.jpg'.format(i.id)
-                SmallFile().thumbnail(i.path, p)
-
-        multi_threadpool(func=f, args=r, desc='生成缩略图jpg gif', pool_size=4)
+    def scan_dir_isdel(self,d):
+        files = File.query.filter(File.path.like(f"%{d}%")).all()
+        r=multi_threadpool(func=self._check_file_del, args=files, desc=f'检查文件删除-{Path(d).name}')
+        db.session.commit()
+        r=[i for i in r if i]
+        return len(r)
 
     def rindex_col(self):
         # 设置字段
         files = File.query.filter(File.ctime == None).all()
-
         def fsetctime(i):
             if os.path.exists(i.path):
                 i.ctime = datetime.fromtimestamp(os.path.getmtime(i.path))
@@ -364,12 +376,7 @@ class InitData:
                 db.session.add(i)
 
         files = File.query.all()
-
-        def fchenckpath(i):
-            if not os.path.exists(i.path):
-                i.path = 'del '+i.path
-                db.session.add(i)
-        multi_threadpool(func=fchenckpath, args=files, desc='再次初始化 字段 ')
+        multi_threadpool(func=self._check_file_del, args=files, desc='再次初始化 字段 ')
         db.session.commit()
 
     def rinit_file(self, file_path):
@@ -494,8 +501,7 @@ class InitData:
             r = self.init_files_bydirs(p)
         #  生成缩略图
         self.init_dir(force=True if r > 10**3 else False)
-
-        # self.create_small_file()
+ 
 
 
  
@@ -528,9 +534,14 @@ class DailyTask:
     def run(self):
         today =  datetime.now().strftime("%Y%m%d")
         cache_file='daily.cache'
+        print('日常任务')
         if not os.path.exists(cache_file) or today!=open(cache_file,'r',encoding='utf-8').read():
+            print('清除log 添加文件')
             self.keep_3day_logs()
             self.scan_dir()
             with open('daily.cache','w',encoding='utf-8') as f:
                 f.write(today)
-        print('日常任务')
+            print('创建缩略图')
+            create_small_file()
+        else:
+            print(today)

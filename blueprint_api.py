@@ -7,23 +7,22 @@ from models import *
 from tools import *
 
 # 返回可跳转对象
-def response_soure(p):
+def response_source(p):
     fileSize = os.path.getsize(p)
-    f = open(p,'rb')
-    try:
-        target_time=request.range.ranges[0][0]
-        range=request.range.to_content_range_header(fileSize)
-    except:
-        target_time=0
-        range=0
+    f = open(p, 'rb')
+    # try:
+    target_time=request.range.ranges[0][0]
+    content_range_header=request.range.to_content_range_header(fileSize)
+    # except:
+    #     target_time=0
+    #     content_range_header=''
     f.seek(target_time)
     headers = {  
-        'Accept-Range':'bytes',
+        'Accept-Range': 'bytes',
         'Content-Length': fileSize,
-        'Content-Range': range
+        'Content-Range': content_range_header
     }
-    return [f,206,headers]
- 
+    return (f, 206, headers)
 # 文件
 @api_bp.route("/share/<id>")  
 def src_share_file(id):
@@ -53,11 +52,11 @@ def src_file(id):
         return Response( open(p,'rb').read(),content_type='application/octet-stream')
 
     if item.type=='video':
-        args=response_soure(p)
+        args=response_source(p)
         return Response(*args,content_type='video/mp4')
 
     elif item.type=='music':
-        args=response_soure(p)
+        args=response_source(p)
         return Response(*args,content_type='audio/mpeg')
 
     elif item.type=='img':
