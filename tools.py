@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from itertools import count
 import os,re,subprocess,hashlib
+import random
 import pickle
 from datetime import datetime, timedelta
 import shutil  
@@ -296,55 +297,58 @@ class Db_Mani:
         self.insm('update web_fc set ctime=? where id=?',ins)
 
 class VideoM:
-    
-    def shot_sth(self,file,t,cnt=1):
+    # 处理百分号时间点 video编辑对象
+    def shot_sth(self,file,video_point,cnt=1):
         try:
-            v= editor.VideoFileClip(str(file))  
-            if isinstance(t,str ) and '%' in t:
-                t=v.duration*int(t.replace('%',''))//100
+            videoclip= editor.VideoFileClip(str(file))  
+            if isinstance(video_point,str ) and '%' in video_point:
+                video_point=videoclip.duration*int(video_point.replace('%',''))//100
         except:
             if cnt==1:
                 # 意外硬链接随即名再试一次
                 newname=Path(file).parent.parent.joinpath('temphd',f'{random.random()}'+Path(file).suffix)
                 dir_make(newname.parent)
                 os.link(file,newname)
-                r=self.shot_sth(newname,t,cnt=0)
+                r=self.shot_sth(newname,video_point,cnt=0)
                 if r:
                     return r
             return
-        return v,int(t)
-
-    def shot(self,file,img,t):
-        #视频截图
-        if os.path.exists(img):
-            return img
-       
-        t=self.shot_sth(file,t)
-        if not t:
+        return videoclip,int(video_point)
+    # 编辑模板
+    
+    def shot_mani(self,video_path,img_path,time_start,func_op):
+        if os.path.exists(img_path):
+            return True
+        time_start=self.shot_sth(video_path,time_start)
+        if not time_start:
             return
-        v,t=t
-        v=v.resize(0.1)
-        v.save_frame(img,t=t)
-        return img
-
-    def shot_gif(self,file,img,t=3,dur=1):
-        # 缩略图 gif
-        if os.path.exists(img):
-            # print(f'已存在{img}')
+        r=func_op(*time_start)
+        if os.path.exists(r):
+            return True
+    # 截图
+    def get_img(self,video_path,img_path,time_start):
+        def f(v,t):
+            v.save_frame(img_path,t=t)
+            return img_path
+        return self.shot_mani(video_path,img_path,time_start,f)
+    # 缩略图
+    def shot_thumbnail(self,file,img,t):
+        def f(v,t):
+            v=v.resize(0.1)
+            v.save_frame(img,t=t)
             return img
-        try:
-            t=self.shot_sth(file,t)
-            if not t:
-                return
-            v,t=t
+        return self.shot_mani(file,img,t,f)
+
+    # 缩略图 gif
+    def shot_gif(self,file,img,t=3,dur=1):
+        def f(v,t):
             clip = v.subclip(t,t+dur) .resize(0.3).set_fps(15)
             clip.write_gif(img)
-        except:
-            # os.link(file,Path(file).with_name('a.mp4'))
-            return
-
+            return img
+        return self.shot_mani(file,img,t,f)
+    
     def thumbnail(self,file,img):
-        # 缩略图
+        # 图片的缩略图
         if os.path.exists(img):
             return
         try:
@@ -642,6 +646,23 @@ def douyin_tag():
                 files.append(dat)
     ren=[[i[1],dst.joinpath(i[0]+Path(i[1]).name)] for i in files]
     hardlink_bydict(ren)
+# 秒数换成合适单位
+def format_second_time(seconds):
+    if seconds < 60:
+        return f"{seconds}秒"
+    elif seconds < 3600:
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        return f"{minutes}分钟 {remaining_seconds}秒"
+    else:
+        hours = seconds // 3600
+        remaining_seconds = seconds % 3600
+        minutes = remaining_seconds // 60
+        remaining_seconds = remaining_seconds % 60
+        if minutes == 0:
+            return f"{hours}小时"
+        else:
+            return f"{hours}小时 {minutes}分钟 {remaining_seconds}秒"
 
 def list_setitem(listitem,n=3):
     # 有序字典 提取重复列表前n个
@@ -653,7 +674,7 @@ def list_setitem(listitem,n=3):
 
 def item_vis(item,app):
     # 数据数据添加列 更直观
-    item.vsize=f'{item.size//1024**2}MiB'
+    item.vsize=f'{item.size//1024**2}MiB' if item.size else 'no-size'
     # 特定文件指定缩略图名
     if item.type=='video' or item.type=='img':
         # c=dbm.session.query(IdPath).filter_by(id=item.id).first()
@@ -688,6 +709,7 @@ def item_vis(item,app):
     # 获取缩略图位置
     hashname=app.config['data'].get(item.id)
     item.hashname=f'{item.id}' if not hashname else hashname
+    
     # 添加标记 是否喜欢
     item.is_like=True if item.tag and item.tag.like else False
     # 添加文件后缀
@@ -780,6 +802,9 @@ def get_relative_time(timestamp):
     else:
         hours = delta.seconds // 3600
         return f'{hours}小时前'
+# 返回消耗时间
+def spend_time(start_time):
+    return '{:.3f}毫秒'.format( (time.time()-start_time)*1000)
 
 def create_small_file( func='',max=2820):
         # 生成缺少的缩略图 函数自定义处理，返回真值掩盖默认操作 
@@ -815,7 +840,9 @@ def create_small_file( func='',max=2820):
 def f():
    
     t='收藏网址 目录 喜欢 收集文件到文件夹'
-    
+    p=r"D:\collect-view\2023-05-20(1)\FemJoy.com 2018-04-27 Alisa I - A New Day.mp4"
+    j=r"D:\collect-view\2023-05-20(1)\FemJoy.com 2018-04-27 Alisa I - A New Day.gif"
+    VideoM().shot_gif(p,j,3.58)
     # backup_tag()
     # src=r"X:\库\视频\dy like\7214442324271713571.mp4"
     # dst=r'C:\Users\Zin\Videos\Captures\a.gif'

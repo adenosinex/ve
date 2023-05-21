@@ -5,6 +5,7 @@ from flask import render_template, request, Response, abort, url_for, session, r
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, current_app
+from flask_migrate import Migrate
 # from flask_whooshee import Whooshee
 # from models import *
 from config import config
@@ -13,12 +14,13 @@ from config import config
 db = SQLAlchemy()
 bt = Bootstrap()
 dbm = SQLAlchemy()
-
+migrate = Migrate(  db)
 def creat_app(config_name='dev'):
     app = Flask(__name__)
-
+    # app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///data_explorer.db'
     app.config.from_object(config[config_name])
     db.init_app(app)
+    migrate.init_app(app)
     bt.init_app(app)
     # who.init_app(app)
     app.config['SQLALCHEMY_BINDS'] = {

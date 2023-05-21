@@ -24,10 +24,11 @@ class File(db.Model):
     type = db.Column(db.String, nullable=False)
     path = db.Column(db.String, nullable=False)
     dir = db.Column(db.String, nullable=False)
-    ctime = db.Column(db.String)
-    utime = db.Column(db.String, default=datetime.now)
+    ctime = db.Column(db.DateTime)
+    utime = db.Column(db.DateTime, default=datetime.now)
     tag = db.relationship('Tag', backref='file', uselist=False)  # 反向引用
-    file2 = db.relationship('File2', backref='file', uselist=False)  # 反向引用
+    shot = db.relationship('Shot', backref='file' )  # 反向引用
+    
     # 小说高频词
     kw = db.Column(db.String, nullable=False)
     # 提取数字
@@ -71,9 +72,20 @@ class File(db.Model):
         return message
 
 
-class File2(db.Model):
-    id = db.Column(db.String, db.ForeignKey(File.id), primary_key=True)
-    path = db.Column(db.String, nullable=False)
+class Shot(db.Model):
+    id = db.Column(db.String,  primary_key=True)
+    pid = db.Column(db.String ,db.ForeignKey(File.id) )
+    stime=db.Column(db.String, nullable=False)
+    ctime=db.Column(db.DateTime, nullable=datetime.now)
+
+    # 添加一条截图
+    @staticmethod
+    def add(path,pid,stime):
+        id=HashM().sha1_head(path)
+        t=Shot(id=id, pid=pid,stime=stime,ctime=datetime.now())
+        db.session.add(t)
+        db.session.commit()
+        
 
 
 class Tag(db.Model):
@@ -304,6 +316,7 @@ class InitData:
     def add_file(self, file_path):
         # 添加文件数据
         # 其他类型文件跳过
+        file_path=str(file_path)
         file_type = FileType_().media_type(file_path)
         if not file_type:
             return
@@ -543,5 +556,6 @@ class DailyTask:
                 f.write(today)
             print('创建缩略图')
             create_small_file()
+            
         else:
             print(today)

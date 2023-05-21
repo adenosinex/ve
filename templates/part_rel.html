@@ -1,0 +1,34 @@
+ 
+<!-- 相关作品链接 -->
+{% macro rel_cre(id,name) -%}
+<a href="/detail/{{id}}" class="btn btn-primary">
+    {{name}}
+</a>
+{%- endmacro %}
+    <h3>相关作品({{post.rel_num}}) db({{post.spend_time}})</h3>
+    <h4>同目录</h4>
+    {% for id,name in post.rel_items_path %}
+    {{ rel_cre(id,name) }}
+    {% endfor %}
+    <h4>大小相似({% if post.ratio %}
+        {{post.ratio*100|int}})
+        {% endif %}
+    </h4>
+    {% for id,name in post.rel_items_size %}
+    {{ rel_cre(id,name) }}
+    {% endfor %}
+    <h4>同类型随机</h4>
+    {% for id,name in post.rel_items_type %}
+    {{ rel_cre(id,name) }}
+    {% endfor %}
+
+    {% macro kws(kw) -%}
+    <a href="/kw/{{kw}}" class="btn btn-primary">
+        {{kw}}
+    </a>
+    {%- endmacro %}
+    <h4>搜索关键词</h4>
+    {% for name in post.kws %}
+    {{ kws(name) }}
+    {% endfor %}
+ 

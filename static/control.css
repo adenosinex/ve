@@ -121,3 +121,32 @@ a{
 		margin: 1%;
 		list-style: none;
 	}
+
+    
+    /* 截图布局 */
+    .images-container {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+ 
+    }
+    .images-container img {
+        
+        
+        object-fit: cover;
+        object-position: center;
+        position: relative;
+    }
+    .image-container {
+      position: relative;
+      display: inline-block; /* optional, adjust to your needs */
+    }
+    .text-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      height: 50%;
+      z-index: 1;
+    }

@@ -13,11 +13,29 @@ app=creat_app('dev2')
 # flask run --port 80 --host 0.0.0.0
 per_page=100
  
+
+def back_work(f ):
+    # 后台 在程序上下文执行
+    def func( ):
+        with app.app_context():
+            f()
+    a=Thread(target=func )
+    a.daemon=True
+    a.start()
+
+def back_work_scandir(paths):
+    def f( ):
+        InitData().scan_dir(paths)
+        create_small_file()
+    back_work(f)
+
 # 常规任务
 with app.app_context():
+        db.create_all()
         app.config['data']=thumbnail_index()
         DailyTask().run()
-        db_query_data
+        
+        InitData.add_file
        
     
 
@@ -34,15 +52,15 @@ def collect_file(url):
     Thread(target=f).run()
 
 def file_getkw(items):
+    # 文件对象信息组合 获取关键词
     relation_text=''
     for i in  items:
         t=f'{i.name} {i.path} {i.kw} {i.tag.tag if i.tag else 0} '
         relation_text+=t
     return Txt_Ana().topn(relation_text,getn=20,least_repeat=2)
 
-# 返回消耗时间
-def spend_time(start_time):
-    return '{:.3f}毫秒'.format( (time.time()-start_time)*1000)
+ 
+
 
 @app.route('/',methods=['GET', 'POST'])
 def index( ):
@@ -160,17 +178,19 @@ def show_logs( ):
         i.index=next(index)
         args=url_args(i.url)
         name=''
-        if args.get(' dir_num'):
-            dir_obj=db.session.query(Dir).filter_by(id= args.get(' dir_num')).one_or_none()
+        dir_num=args.get('dir_num')
+        if dir_num:
+            dir_obj=Dir.query.get(dir_num)
             if dir_obj:
                 name=Path(dir_obj.path).name
-                name='path:'+name
-            elif   args.get(' dir_num') =='-1':
-                name='path:all'
-        if args.get(' pn') and not args.get(' pn')=='1':
-            name+=' pn:'+args.get('pn')
+                name='路径:'+name
+            elif   dir_num =='-1':
+                name='路径:all'
+        pn=args.get('pn')
+        if pn and not pn=='1':
+            name+='pn:'+pn
         if args.get('kw'):
-            name+=' kw:'+args.get('kw')
+            name+=' 关键词:'+args.get('kw')
         i.name=name
         return i
     logs=[f(i) for i in logs]
@@ -189,7 +209,7 @@ def old_page():
 def func_vue( ):
     return render_template('vue.html',now=datetime.now())
  
-last_play_id='0'
+last_play_id='685CFDD4A467A5931585CB6CAF02CF414F76D34A'
 def log_last_play(id):
     global last_play_id
     if id=='-1':
@@ -234,9 +254,25 @@ def rel_data(item):
     item.num=len(all_files)
     return item
 
-@app.route('/detail2/<id>',methods=['GET', 'POST'])
-def detail2(id):
-    return detail(id,is_data=True)
+ 
+@app.route('/shots',methods=['GET', 'POST'])
+def shots( ):
+    # 截图预览跳转
+    files_id=db.session.query(distinct(Shot.pid)).subquery()
+    files=File.query.filter(File.id.in_(files_id)).all()
+    for file in files:
+        for shot in file.shot:    
+            shot.vtime=format_second_time(shot.stime)
+      
+    files=items_vis(files,app)
+    files.sort(key=lambda x:x.shot[0].ctime,reverse=True)
+    for item in files:
+        # 相对时间
+        item.vtime=get_relative_time(item.shot[0].ctime.timestamp() )  
+        # 截图排序
+        item.shot.sort(key=lambda x:x.stime )
+        item.length=len(item.shot)
+    return render_template('shots.html',posts=files)
 
 @app.route('/detail/<id>',methods=['GET', 'POST'])
 def detail(id,is_data=False):
@@ -250,7 +286,20 @@ def detail(id,is_data=False):
         tag=tf.tag.data
         item.set_tag(tag)
         return redirect(request.referrer)
-    
+      # 部分网页 相关作品
+    if request.args.get('part')=='rels':
+        item =rel_data(item)
+        item.spend_time=spend_time(start_time)
+        return render_template("part_rel.html",post=item  )
+    # 截图信息
+    item.shots=Shot.query.filter_by( pid= item.id).order_by(Shot.stime).all()
+    for i in item.shots:
+        i.vtime=format_second_time(i.stime)
+    # 部分网页 截图
+    if request.args.get('part')=='shots':
+        return render_template("part_shots.html",post=item  )
+  
+
     tags_all_src  = db.session.query(Tag.tag, db.func.count(Tag.tag).label('cnt')).filter(Tag.tag!=None).group_by(Tag.tag).order_by( desc('cnt')).all()
     tags_all=[f'{i[1]}-{i[0]}' for i in tags_all_src  if i[0]]
     # 有序字典 提取重复列表前n个
@@ -267,8 +316,8 @@ def detail(id,is_data=False):
     if len(id)==19 and re.findall('\d{19}',id):
         item.dylink='https://www.douyin.com/video/'+id
     # 相关作品
-    item =rel_data(item)
-     
+    # item =rel_data(item)
+    
     data={
         'form':tf,
         'tags':tags_rec+tags_all,
@@ -281,11 +330,11 @@ def detail(id,is_data=False):
         html='detail2.html'
     # 文件信息
     item.infos={
+        'db耗时':f'{spend_time(start_time)}({item.num})',
         '创建时间':item.ctime,
         '大小':item.vsize,
         '文件名':item.vname,
         '位置':item.path,
-        'db耗时':f'{spend_time(start_time)}({item.num})',
 
     }
     return render_template(html,post=item, **data )
@@ -293,16 +342,10 @@ def detail(id,is_data=False):
 
 @app.route('/play/<id>')
 def func_name(id):
-    return render_template('play.html',id=id)
+    post=File.query.get(id)
+    post=item_vis(post,app)
+    return render_template('play.html',post=post)
 
-def back_work(f):
-    # 后台 在程序上下文执行
-    def func( ):
-        with app.app_context():
-            f()
-    a=Thread(target=func )
-    a.daemon=True
-    a.start()
 
 @app.route('/add',methods=['GET', 'POST'])
 def add_files( ):

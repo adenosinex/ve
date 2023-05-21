@@ -13,6 +13,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS=True
     T_THUMBNAIL='20%'
     SAVE='C:/Users/Zin/Documents/testdata/upload'
+    # 截图目录
+    SHOTS=r'X:\库\索引\videoshot'
     FLASKY_DB_QUERY_TIMEOUT = 0.1  # 设置sql执行超时时间 0.1s
     SQLALCHEMY_RECORD_QUERIES = True  # 启用慢查询记录功能
 
@@ -35,7 +37,6 @@ class ProdConfig(Config):
     DEBUG = False
     PER_PAGE=100
     IS_PRO=True
-     
     SMALL_FILE_PATH=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
     SQLALCHEMY_DATABASE_URI = r'sqlite:///data_explorer.db'
    

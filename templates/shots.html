@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block page_content %}
+<!-- 截图 -->
+<h3>预览画面 点击跳转</h3>
+{% for post in posts %}
+{{ post.vname }}{{ post.vname }}
+<div class="images-container">
+    {% for element in post.shot  %}
+    <div class="image-container"  >
+        <a href="/detail/{{element.pid}}?t={{element.stime}}">
+            <img src="/file/{{element.id}}"  alt="预览图"  >
+            <div class="text-overlay"> {{element.vtime}} </div>
+        </a>
+    </div>
+    {% endfor %}
+    
+</div>
+{% endfor %}
+
+
+{% endblock %}

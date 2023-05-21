@@ -23,6 +23,10 @@ def response_source(p):
         'Content-Range': content_range_header
     }
     return (f, 206, headers)
+def img_res(p):
+    with open(p, 'rb') as f: 	
+        image = f.read()
+        return Response(image, mimetype="image/png")
 # 文件
 @api_bp.route("/share/<id>")  
 def src_share_file(id):
@@ -40,11 +44,7 @@ def src_file(id):
     # 分类返回对象
     p=item.path
 
-    if app.config.get('IS_PRO'):
-        if item.file2:
-            p=item.file2.path
-        else:
-            return 'not exists'
+     
     if not os.path.exists(p):
         return 'not exists'
     # 下载直接读取返回
@@ -114,6 +114,36 @@ def func_name(id):
         r=Response(srt2vtt(srt), mimetype='text/vtt')
         return r
     return 'null'
+# 获取截图参数
+def get_video_shotset(id,time_start,dst):
+    video_item=File.query.get(id)
+    video_path=Path(video_item.path)
+    time=int(float(time_start))
+    img_path=Path(dst).joinpath(f"{video_path.stem}-{time }.jpg")
+    return video_path,str(img_path),time
+
+# 视频截图
+@api_bp.route('/shotset/<id>')
+def func_name213(id):
+    # try:
+    dst=dst=current_app.config.get('SHOTS')
+    stime=request.args.get('time')
+    video_path,img_path, time_start=get_video_shotset(id,stime,dst)
+    # except:
+    #     return jsonify({'status':'error'})
+    if video_path.exists():
+        st=time.time()
+        r=VideoM().get_img(video_path,img_path, time_start)
+        if r:
+            InitData().add_file(img_path)
+            db.session.commit()
+            Shot.add(img_path,id,time_start)
+            print(img_path,spend_time(st))
+            return jsonify({'status':'success'})
+    return jsonify({'status':'error video not exist'})
+
+ 
+ 
 
 # 测试当前时间
 @api_bp.route('/now')

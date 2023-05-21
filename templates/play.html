@@ -1,14 +1,15 @@
 {% extends "base.html" %}
- 
+{% block title %}{{post.vname}}-{{post.ctime}}{% endblock %}
 {% block page_content %}
  <style>
     video{
         width: 100%;
-        object-fit: contain;
+        object-fit: cover;
     }
  </style>
+ <h1>{{post.vname}}</h1>
 <div id="play">
-    <video src="/file/{{id}}" controls>
+    <video src="/file/{{post.id}}" controls>
 </div>
        
  
