@@ -3,9 +3,9 @@
 <!-- 截图 -->
 <h3>预览画面 点击跳转</h3>
 {% for post in posts %}
-{{ post.vname }}{{ post.vname }}
+{{ post.vtime }}{{ post.vname }}
 <div class="images-container">
-    {% for element in post.shot  %}
+    {% for element in post.shots  %}
     <div class="image-container"  >
         <a href="/detail/{{element.pid}}?t={{element.stime}}">
             <img src="/file/{{element.id}}"  alt="预览图"  >

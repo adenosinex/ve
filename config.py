@@ -15,6 +15,7 @@ class Config:
     SAVE='C:/Users/Zin/Documents/testdata/upload'
     # 截图目录
     SHOTS=r'X:\库\索引\videoshot'
+    SHOTS_PREVIEW=r'X:\库\索引\videoshot_preview'
     FLASKY_DB_QUERY_TIMEOUT = 0.1  # 设置sql执行超时时间 0.1s
     SQLALCHEMY_RECORD_QUERIES = True  # 启用慢查询记录功能
 

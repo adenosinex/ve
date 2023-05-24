@@ -28,6 +28,7 @@ class File(db.Model):
     utime = db.Column(db.DateTime, default=datetime.now)
     tag = db.relationship('Tag', backref='file', uselist=False)  # 反向引用
     shot = db.relationship('Shot', backref='file' )  # 反向引用
+    video = db.relationship('Video', backref='file', uselist=False )  # 反向引用
     
     # 小说高频词
     kw = db.Column(db.String, nullable=False)
@@ -79,11 +80,59 @@ class File(db.Model):
         return message
 
 
+class Video(db.Model):
+    id = db.Column(db.String,db.ForeignKey(File.id),  primary_key=True)
+    duration = db.Column(db.Integer)
+    resolution = db.Column(db.String(20))
+    mime = db.Column(db.String(20))
+    audio_mime = db.Column(db.String(20))
+    frame_rate = db.Column(db.Float)
+    bit_rate = db.Column(db.Integer)
+    sample_rate=db.Column(db.Integer)
+   
+    @staticmethod
+    def add_video(id):
+        # 添加文件视频信息
+        p=File.query.get(id)
+        if p.type=='video' and os.path.exists(p.path):
+            if Video.query.get(id):
+                return
+            info=VideoM.get_info(p.path)
+            if not info:
+                return
+            t=Video(id=id,**info)
+            db.session.add(t)
+
+    @staticmethod
+    def scan_data():
+        videos=File.query.filter(File.type=='video',File.size>1024**3).filter(~File.id.in_(db.session.query(Video.id))).all()
+        # r=orm_dict(videos[0])
+        with db.session.no_autoflush:
+            multi_threadpool(func=Video.add_video,args=[i.id for i in videos])
+        db.session.commit()
+
+def orm_dict(obj):
+    # 类转为字典 输出
+    r=dict(obj.__dict__)
+    # 黑名单
+    for k in ['_sa_instance_state','_sa_adapter','hashname','id']:
+        if r.get(k):
+            del r[k]
+    # 空与列表
+    for k in list(r.keys() ):
+        if not r[k]:
+            del r[k]
+        elif isinstance(r[k],list):
+            del r[k]
+    # r=dict(r)
+    return r
+
 class Shot(db.Model):
     id = db.Column(db.String,  primary_key=True)
     pid = db.Column(db.String ,db.ForeignKey(File.id) )
     stime=db.Column(db.String, nullable=False)
     ctime=db.Column(db.DateTime, nullable=datetime.now)
+    is_auto=db.Column(db.Boolean, default=False)
 
     # 添加一条截图
     @staticmethod
@@ -92,9 +141,24 @@ class Shot(db.Model):
         t=Shot(id=id, pid=pid,stime=stime,ctime=datetime.now())
         db.session.add(t)
         db.session.commit()
-        
 
-
+    @staticmethod
+    def scan(p=r'X:\库\索引\videoshot_preview' ):
+        ids={i.id for i in Shot.query.all()}
+        @ignore_errors
+        def f(path):
+            id=HashM().sha1_head(path)
+            if id in ids:
+                return
+            ids.add(id)
+            pid,stime=Path(path).stem.split('-')
+            t=Shot(id=id, pid=pid,stime=stime,ctime=datetime.now(),is_auto=True)
+            db.session.add(t)
+        multi_threadpool(func=f,args=get_files(p))
+        db.session.commit()
+    
+    
+    
 class Tag(db.Model):
     id = db.Column(db.String, db.ForeignKey(File.id), primary_key=True)
     like = db.Column(db.Boolean)
@@ -162,11 +226,14 @@ def query_mul_word(sentens, most=False):
 
 @lru_cache(maxsize=128)
 def db_query_data(datat, pn, per_page):
+    # 数据筛选
     data = {i[0]: i[1] for i in datat}
      # 过滤不存在 标记删除,路径不存在
     base = File.query.filter(~File.path.startswith('del'))
     ids = [i.id for i in Tag.query.filter(Tag.tag == 'del').all()]
     base = base.filter(not_(File.id.in_(ids)))
+    # 连接表
+    base=base.outerjoin(Video)
     # 目录筛选
     dirs = ''
     # 喜欢
@@ -262,6 +329,15 @@ def db_query_data(datat, pn, per_page):
         pgn = base.paginate(page=pn, per_page=per_page)
         return pgn, dirs_data
 
+def get_video_shotset(id,time_start,dst_dir):
+    # 获取截图参数
+    video_item=File.query.get(id)
+    video_path=Path(video_item.path)
+    time=int(float(time_start))
+    img_path=Path(dst_dir).joinpath(f"{video_path.stem}-{time }.jpg")
+    return video_path,str(img_path),time
+
+ 
 
 class FileProcessor:
     # 文件索引 自定义信息
@@ -542,10 +618,6 @@ class InitData:
         #  生成缩略图
         self.init_dir(force=True if r > 10**3 else False)
  
-
-
- 
-
 
 class DailyTask:
     def keep_3day_logs(self):

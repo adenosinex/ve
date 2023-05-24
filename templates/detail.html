@@ -86,6 +86,15 @@
 </div>
 <!-- 截图 -->
 <h3>预览画面 点击跳转</h3>
+<div class="images-container-preview">
+    {% for element in post.pshots %}
+    <div class="image-container" data-time="{{element.stime}}">
+        <img src="/thumb/{{post.id}}-{{element.stime}}" alt="预览图">
+        <div class="text-overlay"> {{element.vtime}} </div>
+    </div>
+    {% endfor %}
+ 
+<h3>截图画面 点击跳转</h3>
 <div class="images-container">
     {% for element in post.shots %}
     <div class="image-container" data-time="{{element.stime}}">
@@ -275,9 +284,9 @@
         // 待输入tag
             if (event.key  === 'Enter' && event.ctrlKey) {
             let t=document.querySelector('.inputTag form input')
-            t.addEventListener('keydown',(e)=>{
-                e.preventDefault()
-            })
+            // t.addEventListener('keydown',(e)=>{
+            //     e.preventDefault()
+            // })
             t.scrollIntoView()
             t.focus()
         }

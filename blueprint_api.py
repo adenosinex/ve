@@ -34,6 +34,16 @@ def src_share_file(id):
     p=os.getenv('SAVE')+'/'+id
     if os.path.exists(p):
         return Response( open(p,'rb').read(),content_type='application/octet-stream')
+    return abort(404)
+    
+# 预览数据
+@api_bp.route("/thumb/<ids>")  
+def previews_file(ids):
+    r=app.config['preview_data'].get(ids)
+    if r:
+        with open(r, 'rb') as f: 	
+            image = f.read()
+            return Response(image, mimetype="image/png")
     
 # 单个媒体数据 
 @api_bp.route("/file/<id>")  
@@ -45,7 +55,6 @@ def src_file(id):
     # 分类返回对象
     p=item.path
 
-     
     if not os.path.exists(p):
         return 'not exists'
     # 下载直接读取返回
@@ -64,6 +73,7 @@ def src_file(id):
         with open(p, 'rb') as f: 	
             image = f.read()
             return Response(image, mimetype="image/png")
+
 
 # 置顶网址 
 @api_bp.route("/toplog")  
@@ -124,13 +134,7 @@ def func_name(id):
         r=Response(srt2vtt(srt), mimetype='text/vtt')
         return r
     return 'null'
-# 获取截图参数
-def get_video_shotset(id,time_start,dst):
-    video_item=File.query.get(id)
-    video_path=Path(video_item.path)
-    time=int(float(time_start))
-    img_path=Path(dst).joinpath(f"{video_path.stem}-{time }.jpg")
-    return video_path,str(img_path),time
+
 
 # 视频截图
 @api_bp.route('/shotset/<id>')
