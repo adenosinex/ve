@@ -5,7 +5,18 @@
 {% block title %}Gallery{% endblock %}
 {% block page_content %}
 
-  
+
+<style>
+  .preview p{
+    margin-bottom: 1%;
+  }
+
+  .highlight  {
+ 
+  background-color: yellow; /* 高亮部分颜色 */
+}
+
+</style>
 <!-- 搜索栏 -->
 <div>
   <!--示例 {{ wtf.quick_form(form, id='loginform', action='/login', form_type='horizontal', horizontal_columns=('lg',4,4)) }} -->
@@ -20,7 +31,7 @@
   <br>
 </div>
 
- {% macro kws(kw) -%}
+ {% macro mkws(kw) -%}
     <a href="/kw/{{kw}}" class="btn btn-primary">
        {{kw}} 
     </a>
@@ -28,8 +39,8 @@
 
  <div class="kws">
    <h3>当前页内容关键词</h3>
-    {% for kw in kwargs_page.get('kws') %}
-        {{ kws(kw) }}
+    {% for kw in kws %}
+        {{ mkws(kw) }}
     {% endfor %}
  </div>
  
@@ -125,7 +136,7 @@
 
 <!-- 展示列表 -->
 <div class="post-tabs">
-  {%if pages and spend_time%} <h1>获取数据{{pages}} db耗时：{{spend_time}} {%if type%}类型：{{type}} {%endif%}</h1>{%endif%}
+  {%if pages and spend_time%} <h1> {{pages}} db耗时:{{spend_time}}   {%if type%}类型：{{type}} {%endif%}</h1>{%endif%}
   <!-- 路径链接 -->
   {%if dirs_data%}
   <a href={{url_for(endpoint, dir_num=dirs_data['parent'].id, **kwargs_link)}}>上级目录</a>
@@ -168,6 +179,10 @@
     {% block scripts %}
     {{super()}}
     <script>
+      // 焦点到关键词
+      let first_kw=document.querySelector('.kws a') 
+      if (first_kw)
+      first_kw.focus()
       // 预览节点 点击详情
       let previewsItems = document.querySelectorAll('.preview')
       // 点击弹出查看图片查看

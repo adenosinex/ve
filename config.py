@@ -30,14 +30,14 @@ class Development2Config(Config):
     DEBUG = False
     PER_PAGE=100
     SQLALCHEMY_DATABASE_URI = r'sqlite:///data_explorer.db'
-    FILE_PATH=[r'D:\真子集',r'E:\picture\a长篇小说',r'E:\picture\t\图文数据\女演员图\julia 图',r'E:\music']
     SMALL_FILE_PATH=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
 
 class ProdConfig(Config):
     DEBUG = False
     PER_PAGE=100
     IS_PRO=True
-    SMALL_FILE_PATH=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
+    SMALL_FILE_PATH=r'E:\smallfile'
+    FILE_PATH=[r'D:\真子集',r'E:\picture\a长篇小说',r'E:\picture\t\图文数据\女演员图\julia 图',r'E:\music']
     SQLALCHEMY_DATABASE_URI = r'sqlite:///data_explorer.db'
    
     

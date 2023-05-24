@@ -37,19 +37,20 @@ class File(db.Model):
     def set_like(self):
         # 标记喜欢
         if self.tag:
-            taginfo = self.tag
+            tag_obj = self.tag
         else:
-            taginfo = Tag(id=self.id, utime=int(time.time()))
-
-        if taginfo.like:
-            taginfo.like = None
-            message = {'op': 'like删除成功', 'id': self.id}
+            tag_obj = Tag(id=self.id, utime=int(time.time()))
+        is_add_like=True
+        if tag_obj.like:
+            tag_obj.like = None
+            is_add_like=False
         else:
-            taginfo.like = True
-            message = {'op': 'like添加成功', 'id': self.id}
-        db.session.add(taginfo)
+            tag_obj.like = True
+             
+        db.session.add(tag_obj)
         db.session.commit()
-        return message
+        tag_obj.is_empty_del()
+        return is_add_like
 
     def set_tag(self, s):
         # 标记
@@ -57,11 +58,17 @@ class File(db.Model):
             taginfo = self.tag
         else:
             taginfo = Tag(id=self.id)
-        taginfo.tag = s
-        message = {'op': 'tag设置成功', 'id': self.id}
+        is_set=True
+        if taginfo.tag!=s:
+            taginfo.tag = s
+        else:
+            taginfo.tag = None
+            is_set=False
+        
         db.session.add(taginfo)
         db.session.commit()
-        return message
+        taginfo.is_empty_del()
+        return is_set
 
     def set_kw(self, s):
         # 添加高频词
@@ -93,7 +100,19 @@ class Tag(db.Model):
     like = db.Column(db.Boolean)
     tag = db.Column(db.String)
     utime = db.Column(db.String, default=datetime.now)
+    
+    @staticmethod
+    def del_empty():
+        # 删除空标记
+        empty_tag=Tag.query.filter(Tag.like==None,Tag.tag==None).all()
+        [db.session.delete(i) for i in empty_tag]
+        db.session.commit()
+        print('删除空tag',len(empty_tag))
 
+    def is_empty_del(self):
+        if not self.like and not self.tag:
+            db.session.delete(self)
+            db.session.commit()
 
 class Dir(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -144,9 +163,8 @@ def query_mul_word(sentens, most=False):
 @lru_cache(maxsize=128)
 def db_query_data(datat, pn, per_page):
     data = {i[0]: i[1] for i in datat}
-     # 过滤不存在 标记删除
-    base = File.query.filter(~File.path.startswith('del')).filter(
-        ~File.path.startswith('del'))
+     # 过滤不存在 标记删除,路径不存在
+    base = File.query.filter(~File.path.startswith('del'))
     ids = [i.id for i in Tag.query.filter(Tag.tag == 'del').all()]
     base = base.filter(not_(File.id.in_(ids)))
     # 目录筛选
@@ -267,13 +285,14 @@ class FileProcessor:
     def _process_appletime(self):
         # 录像指定时间
         file = self.fileclass
-        if not r'D:\备份 万一\ds photo\MobileBackup' in file.path:
+        if not r'D:\备份 万一\ds photo' in file.path:
             return
         try:
-            time_str = file.name[4:12]
-            if len(time_str) != 8:
+            # 'IMG_20221003_181419.MOV'
+            time_str = file.name[4:19]
+            if len(time_str) != 15:
                 return
-            datetime_obj = datetime.strptime(time_str, '%Y%m%d')
+            datetime_obj = datetime.strptime(time_str, '%Y%m%d_%H%M%S')
         except:
             return
         t = str(datetime_obj)
@@ -283,22 +302,26 @@ class FileProcessor:
     def _process_dyname(self, force=False):
         file = self.fileclass
         id = Path(file.name).stem
+        if r'55473676897' in file.path:
+            pass
         if r'D:\抖音' in file.path:
             raw_data = Db_Mani(
                 r'X:/库/dyvideo.db').query_one(f'select id,desc,ctime from videos where id="{id}"')
         elif r'X:\库\视频\dy like' in file.path:
-            raw_data = Db_Mani(r'X:/库/code/douyin get/data-dy.db').query_one(
-                f'select id,desc,ctime from raw where id="{id}"')
+            raw_data = Db_Mani(r'X:/库/code/douyin get/data-dy.db').query_one(f'select id,desc,ctime from raw where id="{id}"')
         else:
             return
+        
         if raw_data:
             id, desc, ctime = raw_data
             if not ctime:
                 ctime = 0
-            if force or file.name != desc:
-                file.name, file.ctime = desc, datetime.fromtimestamp(
-                    int(ctime))
+            ctime=datetime.fromtimestamp( int(ctime))
+            if not file.ctime==ctime:
+                file.ctime=ctime
 
+            if force or file.name != desc:
+                file.name = desc
 
 class InitData:
     def __init__(self) -> None:
@@ -308,7 +331,7 @@ class InitData:
         self.now_hash_id=set()
 
     def _update_file(self, file_class,file_path):
-        # 路径更新
+        # 类对象 路径更新
         file_class.path = file_path
         file_class.dir = str(Path(file_path).parent)
         return file_class
@@ -393,26 +416,30 @@ class InitData:
         db.session.commit()
 
     def rinit_file(self, file_path):
-        # 再次初始化数据 dy
+        # 再次初始化数据时间 dy apple
         # 文件数据与缩略图
-        files = get_files(file_path)
+        # files_path = get_files(file_path)
 
         # 只添加新文件
-        files = db.session.query(File).filter(
-            File.path.like(f'%{file_path}%')).all()
-        cnt_files = db.session.query(File).count()
+        files = db.session.query(File).filter(File.path.like(f'%{file_path}%')).all()
+       
         # 文件数据
-
+        self.cnt=0
         def f(i):
-            a = FileProcessor(i.path, i.id)
-            r = a.get_data_File()
-            i.ctime = r.ctime
-            db.session.add(i)
-            db.session.commit()
+            a = FileProcessor(i.path.replace('del','').strip(), i.id)
+            try:
+                r = a.get_data_File()
+            except:
+                return
+            if not i.ctime==r.ctime:
+                i.ctime = r.ctime
+                db.session.add(i)
+                self.cnt+=1
 
         multi_threadpool(func=f, args=files,
                          desc='再次初始化-{}'.format(Path(file_path).name))
-        mes1 = '数据库数据：{}'.format(db.session.query(File).count()-cnt_files)
+        db.session.commit()
+        mes1 = '更新数据：{}({})'.format(self.cnt,len(files))
         print(mes1)
         return mes1
 
@@ -543,7 +570,25 @@ class DailyTask:
             data_init.init_dir(force=True)
         else:
             data_init.init_dir()
-    
+
+    def _copy(self,src,dst):
+        # 复制文件 保留元数据，优先硬链接
+        if os.path.exists(dst):
+            return
+        dir_make(Path(dst).parent)
+        try:
+            os.link(src,dst)
+        except:
+            shutil.copy2(src,dst)
+
+    def back_code(self,today):
+        print('代码备份 flask explorer ',today)
+        p=rf'E:\备份\flask explorer\{today}' 
+        src=r'X:\库\code\flask explorer'
+        def f(i):
+            self._copy(i,rel_abs(i,src,p))
+        ren=[ f(i) for i  in get_files(src)] 
+       
     def run(self):
         today =  datetime.now().strftime("%Y%m%d")
         cache_file='daily.cache'
@@ -552,10 +597,12 @@ class DailyTask:
             print('清除log 添加文件')
             self.keep_3day_logs()
             self.scan_dir()
+            self.back_code(today)
+            create_small_file()
             with open('daily.cache','w',encoding='utf-8') as f:
                 f.write(today)
-            print('创建缩略图')
-            create_small_file()
+            
+
             
         else:
             print(today)

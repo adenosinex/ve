@@ -45,8 +45,12 @@
       <div class="card-body">
         <!-- 文件名 -->
          
-        <p class="card-text"> size:{{post.vsize}}  </p>
-        <p class="card-text">{{post.ctime}} name:{{post.auto_vname}}  </p>
+        <p class="card-text "  > size:{{post.vsize}}  </p>
+        <p class="card-text">ctime:{{post.ctime}}  </p>
+        {% if post.vtag %}
+            <p class="card-text highlight"> add:{{post.vtag}}  </p>
+        {% endif %}
+        <p class="card-text"> name:{{post.auto_vname}}  </p>
         <!-- 形容 -->
         {%if post.kw%}
         <p class="card-text">desc:  {{post.kw   }}</p>

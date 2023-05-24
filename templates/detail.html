@@ -9,22 +9,20 @@
   overflow-x: hidden;
 } */
 
-    video  {
+    video {
         width: 100%;
         max-height: 90vh;
     }
 
     .file {
         width: 100%;
-        
-        
+
+
     }
 
     #info {
         position: relative;
     }
-
-    
 </style>
 {% endblock %}
 
@@ -39,18 +37,28 @@
 <div id="src">
     <h1>
         <a href="/file/{{post.id}}?down=1" download="{{post.vname}}" title="下载"> {{post.vname}}</a>
-        <a href="/tag/{{post.id}}?tag=del" class="btn btn-primary ajaxLink setdel" title="delete">del</a>
-        <a href="/tag/{{post.id}}?tag=like" class="btn btn-primary ajaxLink setlike" title="alt+L">like</a>
-        <a href="" id="shotvideo" class="btn btn-primary ajaxLink" title="快捷键“=”">截图</a>
+        <a href="/tag/{{post.id}}?tag=del" class="btn btn-primary setdel ajaxLink-status  {% if post.tag and post.tag.tag=='del' %}colorSet{% endif %}" title="delete">
+            
+            <i class="fas  fa-trash-alt  "></i>
+            </a>
+        <a href="/tag/{{post.id}}?tag=like"class="btn btn-primary ajaxLink-status setlike {% if post.tag and post.tag.like %}colorSet{% endif %}"
+            title="1">
+            <i class="fas  fa-heart  "></i>
+        </a>
+        
+        
+        <a href="" id="shotvideo" class="btn btn-primary ajaxLink" title="快捷键“0”">
+            <i class="fas fa-camera  "></i>
+             </a>
     </h1>
     <!-- 源文件 -->
     <div class="file">
         {%if post.type=='music'%}
         <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
-            preload="metadata"  ></audio>
+            preload="metadata"></audio>
         {%elif post.type=='video'%}
 
-        <video src="/file/{{post.id}}" id='play'   allowfullscreen>
+        <video src="/file/{{post.id}}" id='play' title="方向键跳跃 ctrl加速跳跃" allowfullscreen>
             {% if post.size>1024**3 %}
             <track label="中文" kind="subtitles" srclang="cn" src='/subtitles/{{post.id}}' default>
             {% endif %}
@@ -62,30 +70,35 @@
     </div>
 </div>
 
- {% macro next(id,cla,row,name,href='') -%}
- <div class="col-{{row}}">
-     <a href="{{href}}" id="{{id}}" class="{{cla}}">{{name}}</a>
- </div>
- {%- endmacro %}
+{% macro next(id,cla,row,name,href='') -%}
+<div class="col-{{row}}">
+    <a href="{{href}}" id="{{id}}" class="{{cla}}">{{name}}</a>
+</div>
+{%- endmacro %}
 
- <div class="conv row">
+<div class="conv row">
     <!-- <span id="index" class="display-5">index</span> -->
-     {{next('index',"btn btn-primary ",2,'index','/keep')}}
-     {{next('next',"btn btn-primary ",2,'下一个')}}
-     {{next('prev',"btn btn-primary ",2,'上一个')}}
-     {{next('',"btn btn-primary ",5,'play',"/play/"+post.id )}}
-     <!-- {{next('shotvideo',"btn btn-primary ajaxLink ",2,'截图')}} -->
+    {{next('index',"btn btn-primary ",2,'index','/keep')}}
+    {{next('next',"btn btn-primary ",2,'下一个')}}
+    {{next('prev',"btn btn-primary ",2,'上一个')}}
+    {{next('',"btn btn-primary ",5,'play',"/play/"+post.id )}}
+    <!-- {{next('shotvideo',"btn btn-primary ajaxLink ",2,'截图')}} -->
 </div>
 <!-- 截图 -->
 <h3>预览画面 点击跳转</h3>
 <div class="images-container">
     {% for element in post.shots %}
     <div class="image-container" data-time="{{element.stime}}">
-        <img src="/file/{{element.id}}"  alt="预览图"  >
+        <img src="/file/{{element.id}}" alt="预览图">
         <div class="text-overlay"> {{element.vtime}} </div>
     </div>
     {% endfor %}
-    
+
+</div>
+<!-- 提交 -->
+<div class="inputTag">
+
+    {{ wtf.quick_form(form,id="tagForm") }}
 </div>
 <br>
 <div id="info">
@@ -113,11 +126,10 @@
     <div class="rel_creation">
 
     </div>
-   
+
 </div>
 <hr>
-<!-- 提交 -->
-{{ wtf.quick_form(form,id="tagForm") }}
+
 
 {% endblock %}
 
@@ -128,7 +140,7 @@
     let locNode = document.createElement('a')
     locNode.href = '#src'
     locNode.click()
-  
+
 
     // 三次触摸切换到play模式
     ntouchEvent(3, document.querySelector('video'), () => { location.href = '/play/' + id })
@@ -150,25 +162,25 @@
         video.addEventListener('ended', () => { next.click() })
     }
     // url参数跳转
-    function jumpPlay(){
+    function jumpPlay() {
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
 
         // 判断是否存在某个参数
         if (urlParams.has('t')) {
-        const t = urlParams.get('t');
-        video.currentTime=t
+            const t = urlParams.get('t');
+            video.currentTime = t
         }
     }
     jumpPlay()
-    function imgsJump(){
+    function imgsJump() {
         // 点击图片跳转
-        let shots=document.querySelectorAll('.image-container')
-    shots.forEach((node)=>{
-        node.addEventListener('click',(e)=>{
-            video.currentTime=node.dataset.time
+        let shots = document.querySelectorAll('.image-container')
+        shots.forEach((node) => {
+            node.addEventListener('click', (e) => {
+                video.currentTime = node.dataset.time
+            })
         })
-    })
 
     }
     imgsJump()
@@ -191,83 +203,98 @@
     tip.textContent = index
 
     // 更新相关作品容器数据
-    function updaterel( ) {
-  fetch('/detail/'+id+'?part=rels')  // 发送 GET 请求到 /greeting 路径
-    .then(response => response.text())  // 将响应转换成纯文本格式
-    .then(text =>{ 
-        let old_node=document.querySelector('.rel_creation')
-        old_node.innerHTML=text 
-        // 添加监听器
-        imgsJump()
-    })  // 更新 <p> 元素的文本内容
-    .catch(error => console.error(error));  // 处理请求错误
-}
+    function updaterel() {
+        fetch('/detail/' + id + '?part=rels')  // 发送 GET 请求到 /greeting 路径
+            .then(response => response.text())  // 将响应转换成纯文本格式
+            .then(text => {
+                let old_node = document.querySelector('.rel_creation')
+                old_node.innerHTML = text
+                // 添加监听器
+                imgsJump()
+            })  // 更新 <p> 元素的文本内容
+            .catch(error => console.error(error));  // 处理请求错误
+    }
 
 
     // 更新截图容器数据
     function updateshots(id) {
-  fetch('/detail/'+id+'?part=shots')  // 发送 GET 请求到 /greeting 路径
-    .then(response => response.text())  // 将响应转换成纯文本格式
-    .then(text =>{ 
-        document.querySelector('.images-container').innerHTML = text
-        // 添加监听器
-        imgsJump()
-    })  // 更新 <p> 元素的文本内容
-    .catch(error => console.error(error));  // 处理请求错误
-}
+        fetch('/detail/' + id + '?part=shots')  // 发送 GET 请求到 /greeting 路径
+            .then(response => response.text())  // 将响应转换成纯文本格式
+            .then(text => {
+                document.querySelector('.images-container').innerHTML = text
+                // 添加监听器
+                imgsJump()
+            })  // 更新 <p> 元素的文本内容
+            .catch(error => console.error(error));  // 处理请求错误
+    }
     // 截图
     // 更新链接
     let shotvideo = document.querySelector('#shotvideo')
-    video.addEventListener('timeupdate',()=>{
-        let url='/shotset/'+id+'?time='+Math.floor(video.currentTime)
-        shotvideo.href=url
 
-    })
     // 延迟更新内容
-    shotvideo.addEventListener('click',(e)=>{
-        console.log(shotvideo.href)
-        setTimeout(() => {
-            updateshots(id)
-        }, 1500);
+    shotvideo.addEventListener('click', (e) => {
+        let url = '/shotset/' + id + '?time=' + Math.floor(video.currentTime)
+        fetch(url)  // 发送 GET 请求到 /greeting 路径
+            .then(response => response.text())  // 将响应转换成纯文本格式
+            .then(text => {
+                // 添加监听器
+                updateshots(id)
+            })  // 更新 <p> 元素的文本内容
+            .catch(error => console.error(error));  // 处理请求错误
+
+
     })
 
-     // 创建一个新的 IntersectionObserver 对象
-const observer = new IntersectionObserver(entries => {
-  // 遍历所有观察状态的条目
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      // 当元素滚动到视图中时执行的操作
-      console.log('元素已经出现在视图中！');
-      updaterel()
-      // 停止观察元素
-      observer.unobserve(entry.target);
-    }
-  });
-});
+    // 创建一个新的 IntersectionObserver 对象
+    const observer = new IntersectionObserver(entries => {
+        // 遍历所有观察状态的条目
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // 当元素滚动到视图中时执行的操作
+                console.log('元素已经出现在视图中！');
+                updaterel()
+                // 停止观察元素
+                observer.unobserve(entry.target);
+            }
+        });
+    });
 
-// 监听需要观察的元素
-const targetElement = document.querySelector('.rel_creation');
-observer.observe(targetElement);
+    // 监听需要观察的元素
+    const targetElement = document.querySelector('.rel_creation');
+    observer.observe(targetElement);
 
     // 键盘控制下一个
     deleteA = document.querySelector('.setdel')
     likeA = document.querySelector('.setlike')
     keepA = document.querySelector('.keepList')
-    document.addEventListener('keydown', (e) => {
-        if (event.altKey && event.key === "l")
-            likeA.click()
-        let jumpDistance=Math.max(video.duration * 0.05,3)
-        switch (e.key) {
+    document.addEventListener('keydown', (event) => {
+        // ctrl 组合键百分比跳转
+        let jumpDistance = 3
+        if (event.ctrlKey && (event.key === "ArrowRight" || event.key === "ArrowLeft"))
+            jumpDistance = Math.max(video.duration * 0.05, 5)
+        // 待输入tag
+            if (event.key  === 'Enter' && event.ctrlKey) {
+            let t=document.querySelector('.inputTag form input')
+            t.addEventListener('keydown',(e)=>{
+                e.preventDefault()
+            })
+            t.scrollIntoView()
+            t.focus()
+        }
+        switch (event.key) {
             case 'ArrowUp':
                 prev.click()
-                e.preventDefault()
+                event.preventDefault()
                 break;
             case 'ArrowDown':
                 next.click()
-                e.preventDefault()
+                event.preventDefault()
                 break;
-            case '=':
+            case '1':
                 shotvideo.click()
+                break;
+            case '0':
+                likeA.click()
                 break;
             case 'Delete':
                 deleteA.click()
@@ -276,19 +303,24 @@ observer.observe(targetElement);
                 keepA.click()
                 break;
             case "ArrowRight":
-                video.currentTime = Math.min(video.currentTime + jumpDistance,video.duration-3);
+                video.currentTime = Math.min(video.currentTime + jumpDistance, video.duration - 3);
                 break;
             case "ArrowLeft":
-                video.currentTime = Math.max(video.currentTime - jumpDistance,0);
+                video.currentTime = Math.max(video.currentTime - jumpDistance, 0);
+                break;
+            case "`":
+                video.currentTime = video.duration / 2
                 break;
             case " ":
                 // 空格暂停 没在焦点接管
                 if (video !== document.activeElement) {
-                    e.preventDefault()
-                    video.paused ? video.play() : video.pause();
+                    video.focus()
+                    // event.preventDefault()
+                    // video.paused ? video.play() : video.pause();
                 }
                 break;
         }
+       
 
     })
 
@@ -296,8 +328,8 @@ observer.observe(targetElement);
     nclickEvent(2, video, () => {
         next.click()
     })
- 
-    setTitle()
+
+    setTitle(index, previewsList.length)
 
 </script>
 {% endblock %}

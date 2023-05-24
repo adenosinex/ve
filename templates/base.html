@@ -7,22 +7,23 @@
 <link rel="icon" href= {{ url_for('static', filename='favicon.ico') }}  type="image/x-icon">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href= {{ url_for('static', filename='bootstrap.min.css') }}  rel="stylesheet">
+<link href= {{ url_for('static', filename='fontawesome/css/all.min.css') }}  rel="stylesheet">
 <link href= {{ url_for('static', filename='control.css') }}  rel="stylesheet">
-{% endblock %}
+{% endblock %} 
 
- 
+   
 {% block navbar %}
 <header class="d-flex justify-content-center py-3">
   <ul class="nav nav-pills">
     <li class="nav-item"> <a href="/" class="nav-link  ">首页 </a>  </li>
     |
-    <li class="nav-item"> <a href="/keep" class="nav-link keepList">继续浏览  </a>  </li>
+    <li class="nav-item"> <a href="/keep" class="nav-link keepList" title="ESC键 触发">继续浏览  </a>  </li>
     <li class="nav-item"> <a href="/detail/-1" class="nav-link ">继续观看  </a>  </li>
     |
     <li class="nav-item">  <a href="/shots" class="nav-link" target="_blank"> 观看记录</a> </li>
     <li class="nav-item">  <a href="/log" class="nav-link" target="_blank">历史记录</a> </li>
     |
-    <li class="nav-item">  <a href="/add" class="nav-link">添加文件夹</a> </li>
+    <li class="nav-item">  <a href="/add" class="nav-link" target="_blank">添加文件夹</a> </li>
     <li class="nav-item">  <a href="/share" class="nav-link">文件共享</a> </li>
     <li class="nav-item">  <a href="/new" class="nav-link">new</a> </li>
   </ul>

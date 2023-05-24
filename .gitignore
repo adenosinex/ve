@@ -1,3 +1,5 @@
 whooshee/*
 __pycache__/*
 *.db
+static/css/*
+static/fontawesome/*

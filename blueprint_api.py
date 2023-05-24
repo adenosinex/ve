@@ -23,6 +23,7 @@ def response_source(p):
         'Content-Range': content_range_header
     }
     return (f, 206, headers)
+
 def img_res(p):
     with open(p, 'rb') as f: 	
         image = f.read()
@@ -97,13 +98,22 @@ def tag_file(id):
     if item:
         if tag=='like':
             r=item.set_like()
-            return jsonify({'status':'ok'})
+            if r:
+                mes='success set'
+            else:
+                mes='success cancel'
+            return jsonify({'status':mes})
         else:
             r=item.set_tag(tag)
             if tag=='del':
                 db_query_data.cache_clear()
-            return jsonify({'status':'ok'})
-        return redirect(request.referrer)
+            if r:
+                mes='success set'
+            else:
+                mes='success cancel'
+            return jsonify({'status':mes})
+           
+    return redirect(request.referrer)
 
 # 字幕srt->vtt返回
 @api_bp.route('/subtitles/<id>')

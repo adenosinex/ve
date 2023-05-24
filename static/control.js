@@ -339,6 +339,7 @@ function previewsSecureId(index) {
     return previewsList[index]
 }
 
+
 // axios part
 // a链接后台发送 变色 点击红 成功绿 失败白
 function clickAWithColor(node, funcSuccess = (response) => true) {
@@ -346,20 +347,29 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
         event.preventDefault()
         event.stopPropagation()
 
-        node.style.backgroundColor = 'gray'
+        node.style.backgroundColor = colorWait
         axios.get(node.href)
             .then(function (response) {
                 if (funcSuccess(response.data))
-
-                    node.style.backgroundColor = 'green'
+                    node.style.backgroundColor = colorSet
                 else
-                    node.style.backgroundColor = 'red'
+                    node.style.backgroundColor = colorConcel
             })
             .catch(function (error) {
-                node.style.backgroundColor = 'red'
+                node.style.backgroundColor = colorError
             })
     }
     )
+}
+// 状态判断链接成功
+function clickAWithColorstatus(node){
+    function fs(data){
+        if(data.status.includes('set'))
+        return true
+        else
+        return false
+    }
+    clickAWithColor(node,fs)
 }
 // 获取触摸滑动角度
 class SwipeHandler {
@@ -567,11 +577,18 @@ function argsGet(url) {
     const result = Object.fromEntries(urlSearchParams.entries())
     return result
 }
-
+let colorSet='green',colorConcel='black',colorError='red',colorWait='gray'
 // 后台get请求
 let likeELements = document.querySelectorAll(".ajaxLink");
 likeELements.forEach((node) => {
     clickAWithColor(node)
+})
+document.querySelectorAll(".ajaxLink-status").forEach((node) => {
+    clickAWithColorstatus(node)
+})
+// 设置背景
+document.querySelectorAll(".colorSet").forEach((node) => {
+    node.style.backgroundColor=colorSet
 })
 
 //  导航链接激活高亮a 加active 如果href在当前url中
@@ -635,10 +652,10 @@ function tabAddItem(item) {
 
 }
 
-function setTitle() {
+function setTitle(index,length) {
     // 标题加索引
-    let perc = (((index + 1) / (previewsList.length)) * 100)
-    let pre = `${Math.round(perc)}% ${index + 1}/${previewsList.length}`
+    let perc = (((index + 1) / (length)) * 100)
+    let pre = `${Math.round(perc)}% ${index + 1}/${length}`
     document.title = pre + ' ' + document.title
 }
 

@@ -12,8 +12,8 @@ img {
 }
 
 .page-header {
-    padding : 20px;
-    
+    padding: 20px;
+
 }
 
 .comments {
@@ -39,7 +39,8 @@ footer {
     padding-top: 40px;
 }
 
-.tip { /* from github.com */
+.tip {
+    /* from github.com */
     color: black !important;
     position: relative;
     padding: 40px;
@@ -50,103 +51,110 @@ footer {
     box-shadow: inset 0 0 10px rgba(27, 31, 35, 0.05);
 }
 
-   /* 关键词 */
-   .kws{
-    font-weight: bold; /* 加粗 */
-    margin: 0 5px; /* 左右 5 像素的间隔 */
-  }
- 
- a{
-	text-decoration: none;
- }
-
-.conv 
-a{
-	background-color: #7e7272;
+/* 关键词 */
+.kws {
+    font-weight: bold;
+    /* 加粗 */
+    margin: 0 5px;
+    /* 左右 5 像素的间隔 */
 }
-.kws,.tags a{
+
+a {
+    text-decoration: none;
+}
+
+.conv a {
+    background-color: #7e7272;
+}
+
+.kws,
+.tags a {
     margin-top: 1.5px;
-	background-color: #fff;
+    background-color: #fff;
     color: #945151;
 }
 
-.rel_creation a{
-    margin : 2px;
-	background-color: #fff;
+.rel_creation a {
+    margin: 2px;
+    background-color: #fff;
     color: #945151;
 }
 
-.like{
+.like {
     background-color: #f2c4c4;
-  }
- 
+}
+
 /* 搜索确认按钮 */
-  input#submit {
+input#submit {
     background-color: #d4bcbc;
 }
- 
-  #fullscreen-container {
-	  position: fixed;
-	  top: 0;
-	  left: 0;
-	  width: 100%;
-	  height: 100%;
-	  background-color: rgba(0, 0, 0, 0.8);
-	  z-index: 9999;
-	  display: none;
-	  justify-content: center;
-	  align-items: center;
-	}
-  
-	#fullscreen-image {
-	  max-height: 98%;
-	  max-width: 80%;
-	  object-fit: contain;
-	  cursor: pointer;
-	  transition: opacity 0.3s ease-in-out;
-	}
-  
-	#fullscreen-image:hover {
-	  opacity: 0.8;
-	}
+
+#fullscreen-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+#fullscreen-image {
+    max-height: 98%;
+    max-width: 80%;
+    object-fit: contain;
+    cursor: pointer;
+    transition: opacity 0.3s ease-in-out;
+}
+
+#fullscreen-image:hover {
+    opacity: 0.8;
+}
 
 
-	.media_choice {
-		display: flex;  
-		flex-direction: row; 
-		justify-content: space-between;  
-	  }
-	  
-	  ul li{
-		margin: 1%;
-		list-style: none;
-	}
+.media_choice {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
 
-    
-    /* 截图布局 */
-    .images-container {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
- 
-    }
-    .images-container img {
-        
-        
-        object-fit: cover;
-        object-position: center;
-        position: relative;
-    }
-    .image-container {
-      position: relative;
-      display: inline-block; /* optional, adjust to your needs */
-    }
-    .text-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      height: 50%;
-      z-index: 1;
-    }
+ul li {
+    margin: 1%;
+    list-style: none;
+}
+
+
+/* 截图布局 */
+.images-container {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+
+}
+
+.images-container img {
+
+
+    object-fit: cover;
+    object-position: center;
+    position: relative;
+}
+
+.image-container {
+    position: relative;
+    display: inline-block;
+    /* optional, adjust to your needs */
+}
+
+.text-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    height: 50%;
+    z-index: 1;
+}

@@ -2,6 +2,7 @@ from collections import Counter, OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from itertools import count
+import math
 import os,re,subprocess,hashlib
 import random
 import pickle
@@ -700,12 +701,35 @@ def url_args(url):
         r[key]=value[0]
     return r
 
+def convert_size(size_bytes):
+    """
+    将字节大小转化为合适的表示形式。
+    """
+
+    # 定义表示不同文件大小单位的后缀字符串
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+
+    # 如果大小为0，则返回“0B”
+    if size_bytes == 0:
+        return '0B'
+
+    # 计算以2为底的对数，以确定大小应用哪个单位(suffix)。
+    i = int(math.floor(math.log(size_bytes, 2) / 10))
+
+    # 使用1024作为基础，计算实际大小
+    p = math.pow(2, i*10)
+
+    # 将大小除以base并保留两位小数
+    size = round(size_bytes/p, 2)
+
+    # 返回大小与相应单位的组合作为字符串
+    return '{}{}'.format(size, units[i])
 
 
 
 def item_vis(item,app):
     # 数据数据添加列 更直观
-    item.vsize=f'{item.size//1024**2}MiB'
+    item.vsize=convert_size(item.size)
     # 获取缩略图位置
     hashname=app.config['data'].get(item.id)
     item.hashname=f'{item.id}' if not hashname else hashname
@@ -720,6 +744,13 @@ def item_vis(item,app):
     if len(item.auto_vname)>max_name:
         item.auto_vname=item.auto_vname[:max_name]+'...' 
     item.auto_vname+=Path(item.vname).suffix
+    # tag信息
+    s=''
+    if item.tag and item.tag.tag:
+        s+='tag:'+item.tag.tag
+    if item.shot:
+        s+=f' shots({len(item.shot)})'
+    item.vtag=s
 
     return item
  
@@ -774,11 +805,10 @@ class FilesUni:
         dir_make(dst_dir)
         [self.rename(i,dst_dir.joinpath(Path(i).name)) for i in files]
 
-def thumbnail_index(ins=''):
+def thumbnail_index( p):
     # 缩略图索引相对路径
     print('静态文件索引')
-    p=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
-    c=r'C:\Users\Zin\Pictures\Saved Pictures\small file\index.cache'
+    c=p+'\index.cache'
     if os.path.exists(c):
         ins=pickle.load(open(c,'rb'))
         print('使用缓存')
@@ -786,6 +816,13 @@ def thumbnail_index(ins=''):
         ins={Path(i).stem:i.replace(p+'\\','').replace('\\','/') for i in get_files(p)}
     pickle.dump(ins,open(c,'wb'))
     return ins
+def rel_abs(file,p,d):
+    # 返回相对路径下得 新绝对路径
+    p=os.path.abspath(p)
+    d=os.path.abspath(d)
+    file=os.path.abspath(file)
+    r=file.replace(p,d)
+    return r
 
 def get_relative_time(timestamp):
     # 获取时间戳相对简短时间
@@ -808,7 +845,8 @@ def spend_time(start_time):
 
 def create_small_file( func='',max=2820):
         # 生成缺少的缩略图 函数自定义处理，返回真值掩盖默认操作 
-        smallfile_path=r'C:\Users\Zin\Pictures\Saved Pictures\small file'
+        print('创建缺少的缩略图')
+        smallfile_path=r'E:\smallfile'
         db=Db_Mani('data_explorer.db')
         already_ids={Path(i).stem for i in get_files(smallfile_path)}
         current_datetime =  datetime.now()
@@ -825,7 +863,7 @@ def create_small_file( func='',max=2820):
             if func :
                 r=func(id,type,path)
                 if r:
-                    return r
+                    return r 
             if    type=='img':
                 p=smallfile_path+'/{}.jpg'.format(id)
                 SmallFile().thumbnail( path,p)

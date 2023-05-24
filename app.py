@@ -9,7 +9,7 @@ from forms import *
 from models import *
 from tools import *
 
-app=creat_app('dev2')
+app=creat_app('pro')
 # flask run --port 80 --host 0.0.0.0
 per_page=100
  
@@ -32,11 +32,11 @@ def back_work_scandir(paths):
 # 常规任务
 with app.app_context():
         db.create_all()
-        app.config['data']=thumbnail_index()
+        app.config['data']=thumbnail_index(app.config.get('SMALL_FILE_PATH'))
         DailyTask().run()
-        
-        InitData.add_file
-       
+        Tag.del_empty()
+        # InitData().scan_dir(r'X:\库\视频\dy like\like')
+        # InitData().rinit_file(r'X:\库\视频\dy like\like')
     
 
 def collect_file(url):
@@ -97,7 +97,7 @@ def index( ):
     pgn,dirs_data=db_query_data( tuple(kwargs_page.items()),pn,per_page)
     pgn.items=items_vis(pgn.items,app)
     # 搜索词的相关词 
-    kwargs_page['kws']=file_getkw(pgn.items)
+    kws=file_getkw(pgn.items)
     # 获取元数据与数据
     data=dict()
     data['form']=search_form
@@ -106,9 +106,10 @@ def index( ):
     data['pagination']=pgn
     data['dirs_data']=dirs_data
     data.update({
-    'pages':f'{pgn.per_page}/{pgn.total}',
+    'pages':f'页码:{pgn.page}({pgn.pages}) 个数:{pgn.per_page}({pgn.total})',
     'spend_time':spend_time(start_time),
-    'type':kwargs_page.get('type')
+    'type':kwargs_page.get('type'),
+    'kws':kws
     })
 
     # 目录链接去除指派目录
@@ -360,8 +361,8 @@ def add_files( ):
             back_work(f)
             flash('正在核对删除')
 
-        elif addform.path.data:
-            d=addform.path.data+','
+        elif addform.addpath.data:
+            d=addform.addpath.data+','
             paths=[i.strip() for i in d.split(',') if i]
             def f( ):
                 InitData().scan_dir(paths)

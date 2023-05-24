@@ -159,21 +159,21 @@ class SwipeHandler {
         return this.nowr
     }
 }
-    const swipeHandler = new SwipeHandler(); // 创建一个滑动事件处理类的实例对象
-    document.addEventListener("touchend", function (e) {
-        let direction = swipeHandler.now();
-        switch (direction) {
-            case 'left': // 左箭头
-                currentNodeIndex--;
-                break;
-            case 'right': // 右箭头
-                currentNodeIndex++;
-                break;
-            default:
-                document.exitFullscreen()
-        }
-        clickNodeAtIndex(currentNodeIndex);
-    })
+    const swipeHandler = new SwipeHandler( function  (direction) {
+       
+       switch (direction) {
+           case 'left': // 左箭头
+               currentNodeIndex--;
+               break;
+           case 'right': // 右箭头
+               currentNodeIndex++;
+               break;
+           default:
+               document.exitFullscreen()
+       }
+       clickNodeAtIndex(currentNodeIndex);
+   } ); // 创建一个滑动事件处理类的实例对象
+   
 
     // 点击指定索引的节点
     function clickNodeAtIndex(index) {

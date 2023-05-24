@@ -78,7 +78,8 @@
         target.href = '/detail/' + id
         newUrl = window.location.origin + '/play/' + id
         history.pushState('', '', newUrl);
-        setTitle()
+         
+        setTitle(index,previewsList.length)
         // document.title= previewsDictName[previewsList[index]]
     }
     // 自动下一个
@@ -91,12 +92,12 @@
     //     file.pause()
     // })
     //手指离开屏幕
-    const swipeHandler = new SwipeHandler(); // 创建一个滑动事件处理类的实例对象
-    document.addEventListener("touchend", function (e) {
-        let direction = swipeHandler.now();
-        swithchhandler(direction)
+    const swipeHandler = new SwipeHandler(swithchhandler); // 创建一个滑动事件处理类的实例对象
+    // document.addEventListener("touchend", function (e) {
+    //     let direction = swipeHandler.now();
+    //     swithchhandler(direction)
 
-    }, false);
+    // }, false);
     // 滑动结束
     const mouseDragDirectionTracker = new MouseDragDirectionTracker();
      document.addEventListener('mouseup', ()=>{

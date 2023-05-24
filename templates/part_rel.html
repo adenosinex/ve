@@ -22,13 +22,13 @@
     {{ rel_cre(id,name) }}
     {% endfor %}
 
-    {% macro kws(kw) -%}
+    {% macro mkws(kw) -%}
     <a href="/kw/{{kw}}" class="btn btn-primary">
         {{kw}}
     </a>
     {%- endmacro %}
     <h4>搜索关键词</h4>
     {% for name in post.kws %}
-    {{ kws(name) }}
+    {{ mkws(name) }}
     {% endfor %}
  
