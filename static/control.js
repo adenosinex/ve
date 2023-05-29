@@ -17,7 +17,7 @@ function getId(s){
 }
 let medias = [];
 let tagAttr = {
-    'video': { 'controls': 'true', 'autoplay': 'true' },
+    // 'video': { 'controls': 'true', 'autoplay': 'true' },
     'audio': { 'controls': 'true', 'loop': '' },
     // 'img': { 'width': '100%' }
 }
@@ -331,12 +331,24 @@ class showImg {
 }
 
 // 获取指定位置id 超范围自动循环
-function previewsSecureId(index) {
+function previewsSecureId(index,previewsList) {
     if (index === previewsList.length)
         index = 0
     else if (index === -1)
         index = previewsList.length - 1
     return previewsList[index]
+}
+
+function isLocalStorageSupported() {
+    try {
+        var testKey = 'test', storage = window.localStorage;
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+    }
+    catch (error) {
+        return false;
+    }
 }
 
 
@@ -656,7 +668,9 @@ function setTitle(index,length) {
     // 标题加索引
     let perc = (((index + 1) / (length)) * 100)
     let pre = `${Math.round(perc)}% ${index + 1}/${length}`
-    document.title = pre + ' ' + document.title
+    let processShow=pre + ' ' + document.title
+    document.title = processShow
+    return processShow
 }
 
 function downloadfile(url, name) {

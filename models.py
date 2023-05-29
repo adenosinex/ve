@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from functools import reduce
 from itertools import count
 from sqlalchemy import and_, or_, case, distinct, or_, func, text, desc, not_
+from sqlalchemy.orm import aliased
 # from sqlalchemy.orm import or_
 from factory import *
 from flask import current_app as app
@@ -53,18 +54,28 @@ class File(db.Model):
         tag_obj.is_empty_del()
         return is_add_like
 
-    def set_tag(self, s):
+    def set_tag(self, tagtext):
         # 标记
         if self.tag:
             taginfo = self.tag
         else:
             taginfo = Tag(id=self.id)
+
         is_set=True
-        if taginfo.tag!=s:
-            taginfo.tag = s
+        # 新建 删除
+        if not taginfo.tag or not tagtext in taginfo.tag:
+            s=taginfo.tag if taginfo.tag else ''
+            taginfo.tag  = f'{s},{tagtext}'
         else:
-            taginfo.tag = None
+            taginfo.tag=taginfo.tag.replace(tagtext,'')
             is_set=False
+
+         # 重构tag 规格化分开
+        if taginfo.tag:
+            s=','.join(re.findall('\w+',taginfo.tag))
+            taginfo.tag=s.strip(',')
+           
+            
         
         db.session.add(taginfo)
         db.session.commit()
@@ -105,10 +116,11 @@ class Video(db.Model):
 
     @staticmethod
     def scan_data():
-        videos=File.query.filter(File.type=='video',File.size>1024**3).filter(~File.id.in_(db.session.query(Video.id))).all()
+        min_size=current_app.config.get('VIDEODATA_MINSIZE',500) 
+        videos=File.query.filter(File.type=='video',File.size>min_size*1024**2).filter(~File.id.in_(db.session.query(Video.id))).all()
         # r=orm_dict(videos[0])
         with db.session.no_autoflush:
-            multi_threadpool(func=Video.add_video,args=[i.id for i in videos])
+            multi_threadpool(func=Video.add_video,args=[i.id for i in videos],desc='扫描大视频数据')
         db.session.commit()
 
 def orm_dict(obj):
@@ -154,8 +166,8 @@ class Shot(db.Model):
             pid,stime=Path(path).stem.split('-')
             t=Shot(id=id, pid=pid,stime=stime,ctime=datetime.now(),is_auto=True)
             db.session.add(t)
-        multi_threadpool(func=f,args=get_files(p))
-        db.session.commit()
+            db.session.commit()
+        multi_threadpool(func=f,args=get_files(p),desc='添加预览图信息')
     
     
     
@@ -224,6 +236,54 @@ def query_mul_word(sentens, most=False):
     return rule
 
 
+def db_query_kw(kw,base):
+    # 搜索技巧 实现
+    mul = 1024**2
+    base=base.outerjoin(Tag)
+    # 获取参数值
+    def get_value(pattern,s):
+        t=re.findall(pattern,s)
+        if t:
+            return t[0]
+        
+    for s in kw.split(' '):
+        # 大小
+        if 'size' in s:
+            num=get_value('size[<>](\d+)',s)
+            if num and '>' in s:
+                base = base.filter(File.size > int(num )*mul)
+            elif num and '<' in s:
+                base = base.filter(File.size < int(num )*mul)
+        # 路径id
+        elif 'pathid' in s:
+            part_text=get_value('pathid:(\d+)',s)
+            if  part_text :
+                r = Dir.query.filter_by(id=int(part_text )).first()
+                base = base.filter(File.path.like(f'%{r.path}%'))
+        # 分辨率
+        elif 'rat' in s:
+            part_text=get_value('rat:(\w+)',s)
+            if  part_text :
+                part_text=part_text.lower()
+                rat_tonum={'4k':'2160','2k':'1440','1k':'1080' }
+                rat_num=rat_tonum.get(part_text)
+                if not rat_num and part_text.endswith('p'):
+                    rat_num=part_text[:-1]
+                if rat_num:
+                    base = base.filter(Video.resolution.like(f'%{rat_num}'))
+        # 编码方式  
+        elif 'mime' in s:
+            part_text=get_value('mime:(\w+)',s)
+            if  part_text :
+                if 'h264' in part_text:
+                    base = base.filter(Video.mime.like(f'%264%'))
+                elif 'h265' in part_text:
+                    base = base.filter(Video.mime.like(f'%265%'))
+                elif 'other' in part_text:
+                    base = base.filter( not_(Video.mime.like(f'%264%')),not_(Video.mime.like(f'%265%'))  )
+                
+    return base
+
 @lru_cache(maxsize=128)
 def db_query_data(datat, pn, per_page):
     # 数据筛选
@@ -236,11 +296,12 @@ def db_query_data(datat, pn, per_page):
     base=base.outerjoin(Video)
     # 目录筛选
     dirs = ''
+    
     # 喜欢
     if data.get('like'):
         base = base.filter(File.tag != None)
-        base = base.join(Tag).filter(or_(Tag.like,Tag.tag != 'del')).order_by(
-            File.type.desc(), Tag.utime.desc())
+        base = base.join(Tag).filter(or_(Tag.like,Tag.tag != 'del')) 
+        
     # 路径模式
     dirs_data = []
     if data.get('dir_num'):
@@ -285,19 +346,8 @@ def db_query_data(datat, pn, per_page):
     # 关键词筛选
     if data.get('kw'):
         querys = data.get('kw')
-        mul = 1024**2
-        base=base.outerjoin(Tag)
-        for s in querys.split(' '):
-            if 'size>' in querys:
-                n = querys.replace('size>', '')
-                base = base.filter(File.size > int(n)*mul)
-            elif 'size<' in querys:
-                n = querys.replace('size<', '')
-                base = base.filter(File.size < int(n)*mul)
-            elif 'pathid:' in querys:
-                n = querys.replace('pathid:', '')
-                r = Dir.query.filter_by(id=int(n)).first()
-                base = base.filter(File.path.like(f'%{r.path}%'))
+        base=db_query_kw(querys,base)
+        # 去除条件
         kw=re.sub('\w+:\w+','',querys)
         kw=re.sub('\w+[><]\w+','',kw)
         if kw:
@@ -307,7 +357,10 @@ def db_query_data(datat, pn, per_page):
     if data.get('sort'):
         querys = data.get('sort')
         print(querys)
-        base = base.order_by(text(querys))
+        if data.get('like') and querys=='file.utime desc'   :
+            base = base.order_by(Tag.utime.desc())
+        else:
+            base = base.order_by(text(querys))
     else:
         base = base.order_by(File.ctime.desc())
     
@@ -633,7 +686,8 @@ class DailyTask:
             print('清除3天前访问记录：',len(r))
 
     def scan_dir(self):
-        dirs = [r'X:\库\视频\dy like', r'X:\库\DyView',
+        dirs = [r'X:\库\视频\dy like', 
+                # r'X:\库\DyView',
                 r'D:\备份 万一\ds photo\video',]
         #   r'D:\抖音\mp4\add',r'D:\抖音\mp4\tag']
         data_init=InitData()
@@ -673,8 +727,6 @@ class DailyTask:
             create_small_file()
             with open('daily.cache','w',encoding='utf-8') as f:
                 f.write(today)
-            
-
             
         else:
             print(today)

@@ -9,12 +9,13 @@ from flask_migrate import Migrate
 # from flask_whooshee import Whooshee
 # from models import *
 from config import config
-# from flask_cors import CORS
+from flask_cors import CORS
 
 db = SQLAlchemy()
 bt = Bootstrap()
 dbm = SQLAlchemy()
 migrate = Migrate(  db)
+c=CORS()
 def creat_app(config_name='dev'):
     app = Flask(__name__)
     # app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///data_explorer.db'
@@ -22,6 +23,7 @@ def creat_app(config_name='dev'):
     db.init_app(app)
     migrate.init_app(app)
     bt.init_app(app)
+    c.init_app(app)
     # who.init_app(app)
     app.config['SQLALCHEMY_BINDS'] = {
         'sqlite': 'sqlite:///:memory:'

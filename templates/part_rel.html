@@ -1,34 +1,60 @@
  
 <!-- 相关作品链接 -->
-{% macro rel_cre(id,name) -%}
+
+<!-- {% macro rel_cre(id,name) -%}
 <a href="/detail/{{id}}" class="btn btn-primary">
     {{name}}
+    
+</a>
+{%- endmacro %} -->
+{% macro rel_cre(post) -%}
+<a href="/detail/{{post.id}}" class="btn btn-primary">
+   
+    <div class="image-container">
+        <img src="/smallfile/{{post.hashname}}" alt="预览图">
+        <div class="text-overlay"> {{post.auto_shortname}} </div>
+    </div>
+    
 </a>
 {%- endmacro %}
-    <h3>相关作品({{post.rel_num}}) db({{post.spend_time}})</h3>
-    <h4>同目录</h4>
-    {% for id,name in post.rel_items_path %}
-    {{ rel_cre(id,name) }}
-    {% endfor %}
-    <h4>大小相似({% if post.ratio %}
-        {{post.ratio*100|int}})
-        {% endif %}
-    </h4>
-    {% for id,name in post.rel_items_size %}
-    {{ rel_cre(id,name) }}
-    {% endfor %}
-    <h4>同类型随机</h4>
-    {% for id,name in post.rel_items_type %}
-    {{ rel_cre(id,name) }}
-    {% endfor %}
 
-    {% macro mkws(kw) -%}
+{% macro mkws(kw) -%}
     <a href="/kw/{{kw}}" class="btn btn-primary">
         {{kw}}
     </a>
     {%- endmacro %}
+    
+    <h3>相关作品({{post.rel_num}}) db({{post.spend_time}})</h3>
+
     <h4>搜索关键词</h4>
     {% for name in post.kws %}
     {{ mkws(name) }}
     {% endfor %}
+
+    <h4>同目录</h4>
+    <div class="images-container">
+
+        {% for  item in post.rel_items_path %}
+        {{ rel_cre(item) }}
+        {% endfor %}
+    </div>
+
+    <h4>大小相似({% if post.ratio %} {{post.ratio*100|int}}) {% endif %}</h4>  
+    <div class="images-container">
+        
+        {% for item in post.rel_items_size %}
+        {{ rel_cre(item) }}
+        {% endfor %}
+    </div>
+    <h4>同类型随机</h4>
+    <div class="images-container">
+        
+        {% for item in post.rel_items_type %}
+        {{ rel_cre(item) }}
+        {% endfor %}
+    </div>
+
+    
+   
+ 
  

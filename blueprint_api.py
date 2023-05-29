@@ -1,5 +1,5 @@
  
-from flask import Blueprint ,current_app,Response,session,request,redirect,flash,url_for,jsonify,current_app,send_from_directory
+from flask import Blueprint,send_file ,current_app,Response,session,request,redirect,flash,url_for,jsonify,current_app,send_from_directory
  
 api_bp=Blueprint ('api_bp',__name__)
 
@@ -10,12 +10,12 @@ from tools import *
 def response_source(p):
     fileSize = os.path.getsize(p)
     f = open(p, 'rb')
-    # try:
-    target_time=request.range.ranges[0][0]
-    content_range_header=request.range.to_content_range_header(fileSize)
-    # except:
-    #     target_time=0
-    #     content_range_header=''
+    try:
+        target_time=request.range.ranges[0][0]
+        content_range_header=request.range.to_content_range_header(fileSize)
+    except:
+        target_time=0
+        content_range_header=''
     f.seek(target_time)
     headers = {  
         'Accept-Range': 'bytes',
@@ -51,16 +51,16 @@ def src_file(id):
     # id接受查询
     item=File.query.filter_by(id=id).first()
     if not item:
-        return 'error'
+        return 'error 不存在'
     # 分类返回对象
     p=item.path
+    # 下载直接读取返回
+    if request.args.get('down'):
+        return send_file(p, as_attachment=True, attachment_filename=Path(p).name)
 
     if not os.path.exists(p):
         return 'not exists'
-    # 下载直接读取返回
-    if request.args.get('down'):
-        return Response( open(p,'rb').read(),content_type='application/octet-stream')
-
+ 
     if item.type=='video':
         args=response_source(p)
         return Response(*args,content_type='video/mp4')

@@ -3,7 +3,7 @@
 {% block title %}{{post.vname}}-{{post.ctime}}{% endblock %}
 {% block head %}
 {{ super() }}
-
+<link rel="stylesheet" href="https://cdn.plyr.io/3.6.4/plyr.css">
 <style>
     /* html, body {
   overflow-x: hidden;
@@ -28,31 +28,32 @@
 
 {% block page_content %}
 
-<!-- 文件添加信息 -->
-{%if post.tag%}
-<h1>like:{{ post.tag.like}} <br> tag:{{post.tag.tag }} </h1>
-{% endif%}
 
 <!-- 标题 -->
 <div id="src">
     <h1>
-        <a href="/file/{{post.id}}?down=1" download="{{post.vname}}" title="下载"> {{post.vname}}</a>
-        <a href="/tag/{{post.id}}?tag=del" class="btn btn-primary setdel ajaxLink-status  {% if post.tag and post.tag.tag=='del' %}colorSet{% endif %}" title="delete">
-            
+        <a href="/file/{{post.id}}?down=1" download="{{post.vname}}" title="下载">
+            <i class="fas  fa-download  "></i>
+        </a>
+        {{post.vname}}
+        <a href="/tag/{{post.id}}?tag=del"
+            class="btn btn-primary setdel ajaxLink-status  {% if post.tag and post.tag.tag=='del' %}colorSet{% endif %}"
+            title="delete">
+
             <i class="fas  fa-trash-alt  "></i>
-            </a>
-        <a href="/tag/{{post.id}}?tag=like"class="btn btn-primary ajaxLink-status setlike {% if post.tag and post.tag.like %}colorSet{% endif %}"
-            title="1">
+        </a>
+        <a href="/tag/{{post.id}}?tag=like"
+            class="btn btn-primary ajaxLink-status setlike {% if post.tag and post.tag.like %}colorSet{% endif %}"
+            title="0">
             <i class="fas  fa-heart  "></i>
         </a>
-        
-        
-        <a href="" id="shotvideo" class="btn btn-primary ajaxLink" title="快捷键“0”">
-            <i class="fas fa-camera  "></i>
-             </a>
+        <a href="" id="shotvideo" class="btn btn-primary ajaxLink" title="快捷键“1”">
+            <i class="fas fa-camera  "></i> <span id="shots_num"> </span>
+        </a>
+
     </h1>
     <!-- 源文件 -->
-    <div class="file">
+    <div class="file player">
         {%if post.type=='music'%}
         <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
             preload="metadata"></audio>
@@ -69,44 +70,87 @@
         {%endif %}
     </div>
 </div>
-
 {% macro next(id,cla,row,name,href='') -%}
+
 <div class="col-{{row}}">
     <a href="{{href}}" id="{{id}}" class="{{cla}}">{{name}}</a>
 </div>
 {%- endmacro %}
-
-<div class="conv row">
+<!-- 工具栏 -->
+<div class="tools row">
     <!-- <span id="index" class="display-5">index</span> -->
-    {{next('index',"btn btn-primary ",2,'index','/keep')}}
-    {{next('next',"btn btn-primary ",2,'下一个')}}
-    {{next('prev',"btn btn-primary ",2,'上一个')}}
-    {{next('',"btn btn-primary ",5,'play',"/play/"+post.id )}}
+    <!-- {{next('index',"btn btn-primary ",2,'index','/keep')}} -->
+
+    <div class="col-2">
+        <span style="font-size: 24px;"> 多页面操作：</span>
+        <a href="/keep" id="index" title="索引" style="font-size: 24px;">
+            index
+        </a>
+    </div>
+
+    <div class="col-1">
+        <a href="" id="prev" title="上一个">
+            <i class="fas fa-angle-left fa-3x"></i>
+        </a>
+    </div>
+    <div class="col-1">
+        <a href="" id="next" title="下一个">
+            <i class="fas fa-angle-right fa-3x"></i>
+        </a>
+    </div>
+    <div class="col-1">
+        <a href="/play/{{post.id}}" id="focus" title="专注页">
+
+            <i class="fas fa-play fa-3x"></i>
+        </a>
+    </div>
+
+
+
+
     <!-- {{next('shotvideo',"btn btn-primary ajaxLink ",2,'截图')}} -->
+
+    <div class="col-3">
+        <span id="progressNow">1 </span><progress value="0" max="100" title="进度" id="itemsProgress"></progress> <span
+            id="progressLength">10</span>
+    </div>
 </div>
 <!-- 截图 -->
 <h3>预览画面 点击跳转</h3>
-<div class="images-container-preview">
+<div class="images-container ">
     {% for element in post.pshots %}
     <div class="image-container" data-time="{{element.stime}}">
         <img src="/thumb/{{post.id}}-{{element.stime}}" alt="预览图">
         <div class="text-overlay"> {{element.vtime}} </div>
     </div>
     {% endfor %}
- 
-<h3>截图画面 点击跳转</h3>
-<div class="images-container">
+</div>
+<h3>截图画面 点击跳转 <span id="shotSpendtime"></span></h3>
+<div class="images-container" id="shots">
     {% for element in post.shots %}
     <div class="image-container" data-time="{{element.stime}}">
         <img src="/file/{{element.id}}" alt="预览图">
         <div class="text-overlay"> {{element.vtime}} </div>
     </div>
     {% endfor %}
-
 </div>
 <!-- 提交 -->
 <div class="inputTag">
 
+    <div class="conv">
+        <hr>
+        <h3>快捷添加tag</h3>
+        {%if post.tag and post.tag.tag%}<h3>已加标签:
+            {% for tag in post.tag.vtags %}
+            <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink-status">{{tag}}</a>
+            {% endfor %}
+
+
+        </h3> {% endif%}
+        {% for tag in tags %}
+        <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>
+        {% endfor %}
+    </div>
     {{ wtf.quick_form(form,id="tagForm") }}
 </div>
 <br>
@@ -120,19 +164,14 @@
         {% endfor %}
     </h3>
     <h3> <a href="/?dir_num={{post.dirobj.id}}" title="进入目录" class="dir">目录:{{post.dir}}</a></h3>
-    <div class="conv">
-        <h3>快捷添加tag</h3>
-        {% for tag in tags %}
-        <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>
-        {% endfor %}
-    </div>
+
     {% macro rel_cre(id,name) -%}
     <a href="/detail/{{id}}" class="btn btn-primary">
         {{name}}
     </a>
     {%- endmacro %}
-
     <div class="rel_creation">
+        <h3>相关作品</h3>
 
     </div>
 
@@ -144,23 +183,97 @@
 
 {% block scripts %}
 {{super()}}
+<!-- 拓展模块 -->
+<script src="https://cdn.plyr.io/3.6.4/plyr.js"></script>
+<script>
+    function setVideoStyle() {
+
+        // 初始化视频播放器
+        const player = new Plyr('.player video', {
+            // 自定义控件
+            controls: [
+                'play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+            ],
+
+            // 设置全屏模式选项
+            fullscreen: {
+                enabled: true,
+                fallback: true,
+
+                iosNative: true
+            },
+            autoplay: [true],
+
+            hideControls: false,
+            displayDuration: false,
+        });
+
+    }
+    setVideoStyle()
+
+</script>
+
 <script>
     // 定位到元素
     let locNode = document.createElement('a')
     locNode.href = '#src'
     locNode.click()
+    // 当前id
+    let urlId = ReId.exec(location.href)[0]
+    localStorage.setItem('lastId', urlId);
+    // 截图数量
+    function updateShotsNum() {
+        let imgs = document.querySelectorAll('#shots img')
+        if (imgs.length > 0)
+            document.querySelector('#shots_num').textContent = imgs.length
+    }
+    updateShotsNum()
+    // 读取列表信息
+    let imagesIds = [], previewsDict = {}, previewsList = []
+    if (isLocalStorageSupported()) {
+        imagesIds = JSON.parse(localStorage.getItem('imageLinks'));
+        previewsDict = JSON.parse(localStorage.getItem('preLink'));
+        if (previewsDict) {
+            previewsList = previewsDict['index']
+            previewsDictName = previewsDict['name']
+            previewsDictLink = previewsDict['link']
+        }
+        setNext()
 
+    }
+    // 设置下一个链接
+    function setNext() {
+        // 获取id
+        if (imagesIds.length !== 0)
+            previewsList = imagesIds
+        let index = previewsList.indexOf(urlId)
+        function setProgress() {
+            document.querySelector('#itemsProgress').value = Math.round(((index + 1) / previewsList.length) * 100)
+            document.querySelector('#progressLength').textContent = previewsList.length
+            document.querySelector('#progressNow').textContent = index + 1
+
+            // t.style.display='inline-block'
+            // t.style.float='left'
+        }
+        setProgress()
+
+        // 链接
+        nlink = '/detail/' + previewsSecureId(index + 1, previewsList)
+        plink = '/detail/' + previewsSecureId(index - 1, previewsList)
+
+        let next = document.querySelector('#next')
+        next.href = nlink
+        let prev = document.querySelector('#prev')
+        prev.href = plink
+        let tip = document.querySelector('#index')
+        tip.textContent = index
+
+    }
 
     // 三次触摸切换到play模式
     ntouchEvent(3, document.querySelector('video'), () => { location.href = '/play/' + id })
     nclickEvent(3, document.querySelector('video'), () => { location.href = '/play/' + id })
-    // 读取列表信息
-    previewsDict = JSON.parse(localStorage.getItem('preLink'));
-    if (previewsDict) {
-        previewsList = previewsDict['index']
-        previewsDictName = previewsDict['name']
-        previewsDictLink = previewsDict['link']
-    }
+
     // 获取文件自动播放 设置id
     let video = document.querySelector('#play')
     video.focus()
@@ -170,6 +283,37 @@
         // 播放完自动下一个
         video.addEventListener('ended', () => { next.click() })
     }
+    class VideoPlayPoints {
+        constructor(maxLength) {
+            this.maxLength = maxLength || 3
+            this.data = JSON.parse(localStorage.getItem('struct') || '{}')
+        }
+
+        setItem(key, value) {
+            //删除最老的键值对以保证新添加的键值对不会超过maxLength
+            if (Object.keys(this.data).length >= this.maxLength) {
+                delete this.data[Object.keys(this.data)[0]]
+            }
+            this.data[key] = value
+            localStorage.setItem('struct', JSON.stringify(this.data))
+        }
+
+        getItem(key) {
+            return this.data[key] || null
+        }
+    }
+
+    const myStruct = new VideoPlayPoints(3)
+    
+    // 监听视频更新时间事件
+   video.addEventListener('seeked',()=>{
+    myStruct.setItem(urlId,video.currentTime)
+   })
+
+    // 播放视频前先检查localStorage中是否有记录，如果有则恢复到上次播放的时间
+    if(myStruct.getItem(urlId))
+    video.currentTime=myStruct.getItem(urlId)
+
     // url参数跳转
     function jumpPlay() {
         const queryString = window.location.search;
@@ -195,66 +339,90 @@
     imgsJump()
     // 高度为一屏幕
     // file.height = window.innerHeight;
-    // 获取id
-    let id = ReId.exec(location.href)[0]
-    let index = previewsList.indexOf(id)
-
-    // 链接
-    nlink = '/detail/' + previewsSecureId(index + 1)
-    plink = '/detail/' + previewsSecureId(index - 1)
-
-
-    let next = document.querySelector('#next')
-    next.href = nlink
-    let prev = document.querySelector('#prev')
-    prev.href = plink
-    let tip = document.querySelector('#index')
-    tip.textContent = index
 
     // 更新相关作品容器数据
     function updaterel() {
-        fetch('/detail/' + id + '?part=rels')  // 发送 GET 请求到 /greeting 路径
+        fetch('/detail/' + urlId + '?part=rels')  // 发送 GET 请求到 /greeting 路径
             .then(response => response.text())  // 将响应转换成纯文本格式
             .then(text => {
                 let old_node = document.querySelector('.rel_creation')
                 old_node.innerHTML = text
                 // 添加监听器
                 imgsJump()
+                setdata()
             })  // 更新 <p> 元素的文本内容
             .catch(error => console.error(error));  // 处理请求错误
+
     }
+    // 设设置本地数据
+    function setdata() {
+        document.querySelectorAll('.rel_creation .images-container').forEach((node) => {
+            node.addEventListener('click', (e) => {
+                let links = node.querySelectorAll('a')
+                const linkArray = [];
+                for (let i = 0; i < links.length; i++) {
+                    linkArray.push(getId(links[i].href));
+                }
+                localStorage.setItem('imageLinks', JSON.stringify(linkArray));
+            })
 
-
+        })
+    }
     // 更新截图容器数据
     function updateshots(id) {
         fetch('/detail/' + id + '?part=shots')  // 发送 GET 请求到 /greeting 路径
             .then(response => response.text())  // 将响应转换成纯文本格式
             .then(text => {
-                document.querySelector('.images-container').innerHTML = text
+                document.querySelector('#shots').innerHTML = text
                 // 添加监听器
                 imgsJump()
+                updateShotsNum()
             })  // 更新 <p> 元素的文本内容
             .catch(error => console.error(error));  // 处理请求错误
     }
-    // 截图
-    // 更新链接
-    let shotvideo = document.querySelector('#shotvideo')
+    // 计算消耗时间
+    function timeConsuming() {
+        let startTime = null; // 记录起始时间戳
 
-    // 延迟更新内容
-    shotvideo.addEventListener('click', (e) => {
-        let url = '/shotset/' + id + '?time=' + Math.floor(video.currentTime)
+        return function () {
+            if (startTime === null) {
+                // 若是第一次调用，记录起始时间戳并返回函数本身
+                startTime = performance.now();
+
+            } else {
+                // 若是第二次调用，计算消耗时间并输出结果，重置起始时间戳为 null
+                const elapsedTime = performance.now() - startTime;
+                startTime = null;
+                s = `本次操作消耗了 ${elapsedTime.toFixed(2)} 毫秒`
+                return s
+            }
+        };
+    }
+
+
+
+
+
+    // 延迟更新内容 截图
+    document.querySelector('#shotvideo').addEventListener('click', (e) => {
+        let url = '/shotset/' + urlId + '?time=' + Math.floor(video.currentTime)
+        const consumeTime = timeConsuming(); // 获取函数
+        consumeTime(); // 第一次调用，返回函数
         fetch(url)  // 发送 GET 请求到 /greeting 路径
             .then(response => response.text())  // 将响应转换成纯文本格式
             .then(text => {
                 // 添加监听器
-                updateshots(id)
+                document.querySelector("#shotSpendtime").textContent = consumeTime()
+                updateshots(urlId)
+
             })  // 更新 <p> 元素的文本内容
             .catch(error => console.error(error));  // 处理请求错误
 
 
     })
 
-    // 创建一个新的 IntersectionObserver 对象
+    // 懒加载 看到才加载
+
     const observer = new IntersectionObserver(entries => {
         // 遍历所有观察状态的条目
         entries.forEach(entry => {
@@ -269,21 +437,30 @@
     });
 
     // 监听需要观察的元素
-    const targetElement = document.querySelector('.rel_creation');
-    observer.observe(targetElement);
-
+    // updaterel()
+    observer.observe(document.querySelector('.rel_creation'));
+    // document.querySelector('.rel_creation').addEventListener('click',()=>{updaterel()})
     // 键盘控制下一个
     deleteA = document.querySelector('.setdel')
     likeA = document.querySelector('.setlike')
     keepA = document.querySelector('.keepList')
     document.addEventListener('keydown', (event) => {
         // ctrl 组合键百分比跳转
-        let jumpDistance = 3
-        if (event.ctrlKey && (event.key === "ArrowRight" || event.key === "ArrowLeft"))
-            jumpDistance = Math.max(video.duration * 0.05, 5)
+        let jumpDistance = Math.max(video.duration * 0.05, 5)
+        if (event.ctrlKey && event.key === "ArrowLeft") {
+            video.currentTime = Math.max(video.currentTime - jumpDistance, 0);
+            return
+        }
+        else if (event.ctrlKey && event.key === "ArrowRight") {
+
+            video.currentTime = Math.min(video.currentTime + jumpDistance, video.duration - 3);
+            return
+        }
+
+        console.log(jumpDistance)
         // 待输入tag
-            if (event.key  === 'Enter' && event.ctrlKey) {
-            let t=document.querySelector('.inputTag form input')
+        if (event.key === 'Enter' && event.ctrlKey) {
+            let t = document.querySelector('.inputTag form input')
             // t.addEventListener('keydown',(e)=>{
             //     e.preventDefault()
             // })
@@ -291,6 +468,14 @@
             t.focus()
         }
         switch (event.key) {
+            case 'ArrowLeft':
+                video.currentTime = Math.max(video.currentTime - 3, 0)
+                event.preventDefault()
+                break;
+            case 'ArrowRight':
+                video.currentTime = Math.min(video.currentTime + 3, video.duration)
+                event.preventDefault()
+                break;
             case 'ArrowUp':
                 prev.click()
                 event.preventDefault()
@@ -311,12 +496,14 @@
             case "Escape":
                 keepA.click()
                 break;
-            case "ArrowRight":
-                video.currentTime = Math.min(video.currentTime + jumpDistance, video.duration - 3);
-                break;
-            case "ArrowLeft":
-                video.currentTime = Math.max(video.currentTime - jumpDistance, 0);
-                break;
+            // case "ArrowRight":
+            //     video.currentTime = Math.min(video.currentTime + jumpDistance, video.duration - 3);
+            //     event.preventDefault()
+            //     break;
+            // case "ArrowLeft":
+            //     video.currentTime = Math.max(video.currentTime - jumpDistance, 0);
+            //     event.preventDefault()
+            //     break;
             case "`":
                 video.currentTime = video.duration / 2
                 break;
@@ -329,7 +516,7 @@
                 }
                 break;
         }
-       
+
 
     })
 
@@ -338,7 +525,8 @@
         next.click()
     })
 
-    setTitle(index, previewsList.length)
+
+
 
 </script>
 {% endblock %}

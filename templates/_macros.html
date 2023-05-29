@@ -32,7 +32,7 @@
 {% endmacro %}
 
 {% macro imgview_widget(post) %}
-<div class="preview col col-6 col-xs-6 col-lg-2 " data-id="{{post.id}}" data-name="{{post.vname}}">
+<div class="preview col col-6 col-xs-6 col-lg-2 "   data-id="{{post.id}}" data-name="{{post.vname}}">
     <div class="card shadow-sm">
     <!-- 图片 -->
     
@@ -50,7 +50,7 @@
         {% if post.vtag %}
             <p class="card-text highlight"> add:{{post.vtag}}  </p>
         {% endif %}
-        <p class="card-text"> name:{{post.auto_vname}}  </p>
+        <p class="card-text" title="{{post.name}}"> name:{{post.auto_vname}}  </p>
         <!-- 形容 -->
         {%if post.kw%}
         <p class="card-text">desc:  {{post.kw   }}</p>

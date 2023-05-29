@@ -30,7 +30,20 @@ def back_work_scandir(paths):
         create_small_file()
     back_work(f)
 
+def tags_get():
+    # 获取tag标签
+    all_tags =','.join ([ i.tag for i in  Tag.query.filter(Tag.tag!=None).all()])
+    count_tag=Counter(all_tags.split(',')).most_common()
+    all_tag = [f'{i[1]}-{i[0]}' for i in count_tag if i[0]]
+    # 有序字典 提取重复列表前n个
+    rec_tags =  [ i.tag for i in  db.session.query((Tag )).filter(Tag.tag!=None,Tag.tag!='del').order_by(Tag.utime.desc()).limit(10).all()] 
+    rec_tags=','.join(rec_tags).split(',')
+    unique_dict = OrderedDict.fromkeys(rec_tags)
+    tags_rec = list(unique_dict.keys())[:5]
+    
+    return all_tag,tags_rec
 
+db_query_data
 # 常规任务
 with app.app_context():
     db.create_all()
@@ -39,12 +52,10 @@ with app.app_context():
         r'X:\库\索引\videoshot_preview', lambda i, p: i)
     DailyTask().run()
     Tag.del_empty()
-    # Video.scan_data()
-    # Shot.scan()
-    # InitData().scan_dir(r'X:\库\视频\dy like\like')
-    # InitData().rinit_file(r'X:\库\视频\dy like\like')
+    tags_get()
+    File.set_tag
 
-
+db_query_data
 def collect_file(url):
     # 收集文件 放在磁盘目录 url参数筛选 后台程序
     if 'sort:random' in url:
@@ -69,7 +80,7 @@ def file_getkw(items):
 
 
 db_query_data
-
+items_vis
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -133,9 +144,8 @@ def index():
 
     return render_template('index.html', endpoint='index', kwargs_link=kwargs_link, kwargs_page=kwargs_page, **data)
 
-
 @app.route('/detail/<id>', methods=['GET', 'POST'])
-def detail(id, is_data=False):
+def detail(id ):
     # 详情页 文件对象。接受表单设置tag 返回所有tag，文件所在目录
     if log_last_play(id):
         return log_last_play(id)
@@ -149,6 +159,8 @@ def detail(id, is_data=False):
     if item.video:
         infos.update(orm_dict(item.video))
         infos['duration'] = convert_time(infos['duration']//10**3)
+        infos['bit_rate'] = convert_size(infos['bit_rate'] )
+
     item.infos = infos
 
     if tf.validate_on_submit():
@@ -174,14 +186,8 @@ def detail(id, is_data=False):
     if request.args.get('part') == 'previews':
         return render_template("part_shots.html", posts=item.pshots)
 
-    tags_all_src = db.session.query(Tag.tag, db.func.count(Tag.tag).label(
-        'cnt')).filter(Tag.tag != None).group_by(Tag.tag).order_by(desc('cnt')).all()
-    tags_all = [f'{i[1]}-{i[0]}' for i in tags_all_src if i[0]]
-    # 有序字典 提取重复列表前n个
-    tags_rec_src = [i[0] for i in db.session.query(Tag.tag).filter(
-        Tag.tag != None).order_by(Tag.utime.desc()).limit(100).all()]
-    tags_rec = list_setitem(tags_rec_src, 5)
-
+    
+    tags_all,tags_rec=tags_get()
     item = item_vis(item, app)
 
     # 目录
@@ -191,17 +197,16 @@ def detail(id, is_data=False):
     id = Path(item.path).stem
     if len(id) == 19 and re.findall('\d{19}', id):
         item.dylink = 'https://www.douyin.com/video/'+id
-
+    
     data = {
         'form': tf,
         'tags': tags_rec+tags_all,
     }
-    html = 'detail.html'
-    # 测试数据
-    if is_data:
-        html = 'detail2.html'
+    if item.tag and item.tag.tag:
+        item.tag.vtags=[i for i in item.tag.tag.split(',') if i]
+    
 
-    return render_template(html, post=item, **data)
+    return render_template('detail.html', post=item, **data)
 
 
 @app.route('/media/<value>', methods=['GET', 'POST'])
@@ -317,8 +322,8 @@ def rel_data(item):
     # 路径
     files = db.session.query(File).filter(File.dir == item.dir).order_by(
         func.random()).limit(rel_num).all()
-    files = items_vis(files, app)
-    item.rel_items_path = [(i.id, i.auto_vname) for i in files]
+    
+    item.rel_items_path = items_vis(files, app)
     all_files += files
     # 同类型文件
     # max_file=File.query.order_by(File.size.desc()).limit(1).first()
@@ -326,22 +331,22 @@ def rel_data(item):
     # files= File.query.filter(File.type==item.type,File.size>max_file.size*0.5).order_by(func.random()).limit(rel_num).all()
     # # 最大为最大文件0.1
     # files+= File.query.filter(File.type==item.type,File.size<max_file.size*0.1).order_by(func.random()).limit(rel_num).all()
+    type_base=File.query.filter(File.type == item.type)
     # 随机
-    files = File.query.filter(File.type == item.type).order_by(
+    files = type_base.order_by(
         func.random()).limit(rel_num).all()
-    files = items_vis(files, app)
-    item.rel_items_type = [(i.id, i.auto_vname) for i in files]
+     
+    item.rel_items_type = items_vis(files, app)
     all_files += files
     # 大小10%以内,5个
     ratio = 0.1
     for i in range(1, 10):
         ratio = i/10
-        files = db.session.query(File).filter(File.size.between(
+        files = type_base.filter(File.size.between(
             item.size*(1-ratio), item.size*(1+ratio))).order_by(func.random()).limit(rel_num).all()
         if len(files) >= rel_num:
             break
-    files = items_vis(files, app)
-    item.rel_items_size = [(i.id, i.auto_vname) for i in files]
+    item.rel_items_size = items_vis(files, app)
     all_files += files
     item.rel_num = rel_num
     item.ratio = ratio
@@ -382,8 +387,7 @@ def func_name(id):
 @app.route('/add', methods=['GET', 'POST'])
 def add_files():
     addform = AddDirForm()
-
-    message = ''
+    
     if addform.validate_on_submit():
         if addform.isdelpath.data:
             def f():
@@ -391,7 +395,6 @@ def add_files():
                 print(f'标记删除:{r}')
             back_work(f)
             flash('正在核对删除')
-
         elif addform.addpath.data:
             d = addform.addpath.data+','
             paths = [i.strip() for i in d.split(',') if i]
@@ -402,7 +405,7 @@ def add_files():
             back_work(f)
             flash('正在添加数据')
 
-    return render_template('add.html', form=addform, message=message)
+    return render_template('add.html', form=addform )
 
 
 def files_info(files):

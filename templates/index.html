@@ -7,78 +7,83 @@
 
 
 <style>
-  .preview p{
+  .preview p {
     margin-bottom: 1%;
   }
 
-  .highlight  {
- 
-  background-color: yellow; /* 高亮部分颜色 */
-}
+  .highlight {
 
+    background-color: yellow;
+    /* 高亮部分颜色 */
+  }
 </style>
 <!-- 搜索栏 -->
+{% macro mkws(kw) -%}
+<a href="/kw/{{kw}}" class="btn btn-primary">
+  {{kw}}
+</a>
+{%- endmacro %}
+
 <div>
   <!--示例 {{ wtf.quick_form(form, id='loginform', action='/login', form_type='horizontal', horizontal_columns=('lg',4,4)) }} -->
   {%if form%}
   {{ wtf.quick_form(form,id="searchForm") }}
   {%endif%}
   <div class="tips">
-    <p>搜索技巧  “size>10” 限定大小 单位MB  “pathid:1” 限定特定目录下 </p>
+    <p>搜索技巧 {{ mkws('size>1024') }} 限定大小 单位MB {{ mkws('pathid:1') }} 限定特定目录下
+      {{ mkws('rat:4K') }} 4k视频 {{ mkws('rat:576P') }} 1K以下视频
+      编码 {{ mkws('mime:h265') }} {{ mkws('mime:other') }}
+    </p>
     <p>收集设置 “num&lt5” 限定个数(包含) “sort:random” 随机排序(多次采集文件数不准确) </p>
 
   </div>
   <br>
 </div>
 
- {% macro mkws(kw) -%}
-    <a href="/kw/{{kw}}" class="btn btn-primary">
-       {{kw}} 
-    </a>
- {%- endmacro %}
 
- <div class="kws">
-   <h3>当前页内容关键词</h3>
-    {% for kw in kws %}
-        {{ mkws(kw) }}
-    {% endfor %}
- </div>
- 
+<div class="kws">
+  <h3>当前页内容关键词</h3>
+  {% for kw in kws %}
+  {{ mkws(kw) }}
+  {% endfor %}
+</div>
+
 
 
 <div class="conv">
   <h3>便捷链接</h3>
- <a href="/toplog" class="btn btn-primary ajaxLink">收藏网址</a>
- <a href="/?dir_num=-1" class="btn btn-primary">目录</a>
- <a href="/?like=True" class="btn btn-primary">喜欢</a>
- <a href="/?collect=True" class="btn btn-primary">收集文件到文件夹</a>
-  
+  <a href="/toplog" class="btn btn-primary ajaxLink">收藏网址</a>
+  <a href="/?dir_num=-1" class="btn btn-primary">目录</a>
+  <a href="/?like=True" class="btn btn-primary">喜欢</a>
+  <a href="/?collect=True" class="btn btn-primary">收集文件到文件夹</a>
+
 
 </div>
- 
+
 <!-- 条件栏 -->
 <h3>条件筛选</h3>
-<div  class="form-inline query_container row  ">
- <div class="col-11">
-  <select id="filter_media" title="筛选 "  class="text-left form-select-sm"   >
-    <option value="/media/all">all</option>
-    <option value="/media/video"> video </option>  
-    <option value="/media/img"> img </option>  
-    <option value="/media/music"> music </option>  
-    <option value="/media/story"> story </option>  
-  </select>
- </div>
- 
+<div class="form-inline query_container row  ">
+  <div class="col-11">
+    <select id="filter_media" title="筛选 " class="text-left form-select-sm">
+      <option value="/media/all">all</option>
+      <option value="/media/video"> video </option>
+      <option value="/media/img"> img </option>
+      <option value="/media/music"> music </option>
+      <option value="/media/story"> story </option>
+    </select>
+  </div>
+
   <div class="col-1">
-    <select id="sort_media" title="排序"    class="text-right form-select-sm" >
-      <option value="/sort/ctime desc"> 最新 </option>  
+    <select id="sort_media" title="排序" class="text-right form-select-sm">
+      <option value="/sort/ctime desc"> 最新 </option>
       <!-- <option value="/sort/ rand()"> 随机</option>   -->
-      <option value="/sort/size desc"> 最大 </option>  
-      <option value="/sort/file.utime desc"> 最近添加 </option>  
-      <option value="/sort/video.duration desc"> 最长 </option>  
-      <option value="/sort/ctime asc"> 最旧 </option>  
-      <option value="/sort/size asc"> 最小 </option>  
-      <option value="/sort/file.utime asc"> 最早添加 </option>  
+      <option value="/sort/size desc"> 最大 </option>
+      <option value="/sort/file.utime desc"> 最近添加 </option>
+      <option value="/sort/video.duration desc"> 最长 </option>
+      <option value="/sort/video.bit_rate desc"> 比特率最高 </option>
+      <option value="/sort/ctime asc"> 最旧 </option>
+      <option value="/sort/size asc"> 最小 </option>
+      <option value="/sort/file.utime asc"> 最早添加 </option>
     </select>
   </div>
 </div>
@@ -86,58 +91,59 @@
 <hr>
 <script>
   // 下拉栏 跳转
-  function selectClick(id){
+  function selectClick(id) {
     var selectElement = document.getElementById(id);
-    selectElement.addEventListener('change', function() {
+    selectElement.addEventListener('change', function () {
       var selectedValue = selectElement.value;
       if (selectedValue) {
         window.location.href = selectedValue;
       }
-    });}
-    // 点击筛选
-    selectClick('filter_media')
-    selectClick('sort_media')
-    // url参数 设置下拉栏
-    function selectMediaOption(id,key,prefix) {
-      // 获取下拉列表和当前 URL 中的 media 参数
-      var filterDropdown = document.querySelector(id);
-      var urlParams = new URLSearchParams(window.location.search);
-      var mediaParam = urlParams.get(key);
+    });
+  }
+  // 点击筛选
+  selectClick('filter_media')
+  selectClick('sort_media')
+  // url参数 设置下拉栏
+  function selectMediaOption(id, key, prefix) {
+    // 获取下拉列表和当前 URL 中的 media 参数
+    var filterDropdown = document.querySelector(id);
+    var urlParams = new URLSearchParams(window.location.search);
+    var mediaParam = urlParams.get(key);
 
-      // 遍历下拉列表的选项，与参数进行匹配
-      for (var i = 0; i < filterDropdown.options.length; i++) {
-        var option = filterDropdown.options[i];
-        if (option.value.replace(prefix,'') === mediaParam) {
-          // 如果匹配，则将该选项设置为“选中”
-          option.selected = true;
-          break;
-        }
+    // 遍历下拉列表的选项，与参数进行匹配
+    for (var i = 0; i < filterDropdown.options.length; i++) {
+      var option = filterDropdown.options[i];
+      if (option.value.replace(prefix, '') === mediaParam) {
+        // 如果匹配，则将该选项设置为“选中”
+        option.selected = true;
+        break;
       }
     }
-      // url参数设置页面
-      selectMediaOption("#filter_media","type",'/media/');
-      selectMediaOption("#sort_media","sort",'/sort/');
-      // 按键切换
-      document.addEventListener('keydown', function (event) {
-        switch (event.key) {
-          case 'ArrowLeft': // 左箭头
-            location.href=getPrevPageUrl()
-              break;
-          case 'ArrowRight': // 右箭头
-            location.href=getNextPageUrl()
-                break;
-            
-            }
-    })
+  }
+  // url参数设置页面
+  selectMediaOption("#filter_media", "type", '/media/');
+  selectMediaOption("#sort_media", "sort", '/sort/');
+  // 按键切换
+  document.addEventListener('keydown', function (event) {
+    switch (event.key) {
+      case 'ArrowLeft': // 左箭头
+        location.href = getPrevPageUrl()
+        break;
+      case 'ArrowRight': // 右箭头
+        location.href = getNextPageUrl()
+        break;
 
-  
-    
+    }
+  })
+
+
+
 </script>
 
 
 <!-- 展示列表 -->
 <div class="post-tabs">
-  {%if pages and spend_time%} <h1> {{pages}} db耗时:{{spend_time}}   {%if type%}类型：{{type}} {%endif%}</h1>{%endif%}
+  {%if pages and spend_time%} <h1> {{pages}} db耗时:{{spend_time}} {%if type%}类型：{{type}} {%endif%}</h1>{%endif%}
   <!-- 路径链接 -->
   {%if dirs_data%}
   <a href={{url_for(endpoint, dir_num=dirs_data['parent'].id, **kwargs_link)}}>上级目录</a>
@@ -180,15 +186,26 @@
     {% block scripts %}
     {{super()}}
     <script>
-      // 焦点到关键词
-      let first_kw=document.querySelector('.kws a') 
-      if (first_kw)
-      first_kw.focus()
+      // 清空相关作品数据
+      localStorage.setItem('imageLinks', JSON.stringify([]));
+      // 自动定位上一个元素
+      lastId = localStorage.getItem('lastId')
+      let ele=document.querySelector(`[data-id="${lastId}"]`)
+      if (lastId&&ele) {
+        ele.scrollIntoView()
+      }
+      else {
+
+        // 焦点到关键词
+        let first_kw = document.querySelector('.kws a')
+        if (first_kw)
+          first_kw.focus()
+      }
       // 预览节点 点击详情
       let previewsItems = document.querySelectorAll('.preview')
       // 点击弹出查看图片查看
       let imgshow = new showImg()
-      previewsItems.forEach((node) => {
+      document.querySelectorAll('.preview').forEach((node) => {
         // node.addEventListener('click', (event) => {
         let img = node.querySelector('img')
         if (img)
@@ -219,92 +236,95 @@
         previewsDict['link'] = previewsDictLink
         localStorage.setItem('preLink', JSON.stringify(previewsDict))
       }
-  
+
+
+      
+
 
       let container = document.createElement('div')
-container.className='functionContainer'
-let insertObj = document.querySelector('.post-tabs')
-insertObj.insertBefore(container, insertObj.children[0])
+      container.className = 'functionContainer'
+      let insertObj = document.querySelector('.post-tabs')
+      insertObj.insertBefore(container, insertObj.children[0])
 
-// 音频链接
-let musics = document.querySelectorAll('audio')
-let musicSrcs = []
-let musicSrcNode = {}
-for (let i = 0; i < musics.length; i++) {
-    musicSrcs[i] = musics[i].src
-    musicSrcNode[musics[i].src] = musics[i]
-}
-// 添加音乐播放器
-if (musics.length > 0) {
-    let container = document.createElement('div')
+      // 音频链接
+      let musics = document.querySelectorAll('audio')
+      let musicSrcs = []
+      let musicSrcNode = {}
+      for (let i = 0; i < musics.length; i++) {
+        musicSrcs[i] = musics[i].src
+        musicSrcNode[musics[i].src] = musics[i]
+      }
+      // 添加音乐播放器
+      if (musics.length > 0) {
+        let container = document.createElement('div')
 
-    let display_audio = document.createElement('audio')
-    display_audio.src = musics[0].src
-    display_audio.setAttribute('controls', true)
+        let display_audio = document.createElement('audio')
+        display_audio.src = musics[0].src
+        display_audio.setAttribute('controls', true)
 
-    let playNext = document.createElement('button')
-    playNext.textContent = '下一首'
-    
+        let playNext = document.createElement('button')
+        playNext.textContent = '下一首'
 
-    let tipNow = document.createElement('span')
-    tipNow.textContent = '1.正在播放 ' + musics[0].dataset.desc
 
-    container.appendChild(display_audio)
-    container.appendChild(playNext)
-    container.appendChild(tipNow)
-    let insertObj = document.querySelector('.post-tabs')
-    insertObj.insertBefore(container, insertObj.children[0])
-    // row.insertBefore(audio,row.children[0])
+        let tipNow = document.createElement('span')
+        tipNow.textContent = '1.正在播放 ' + musics[0].dataset.desc
 
-    function PlayAudio(node) {
-        display_audio.src = node.src
-        let index = musicSrcs.indexOf(display_audio.src)
-        tipNow.textContent = index + ':' + node.dataset.desc
-        document.title = index + ':' + node.dataset.desc
-        display_audio.play()
-    }
-    //   点击项目播放
-    musics.forEach((node) => {
-        $(node.parentNode).click(() => {
+        container.appendChild(display_audio)
+        container.appendChild(playNext)
+        container.appendChild(tipNow)
+        let insertObj = document.querySelector('.post-tabs')
+        insertObj.insertBefore(container, insertObj.children[0])
+        // row.insertBefore(audio,row.children[0])
+
+        function PlayAudio(node) {
+          display_audio.src = node.src
+          let index = musicSrcs.indexOf(display_audio.src)
+          tipNow.textContent = index + ':' + node.dataset.desc
+          document.title = index + ':' + node.dataset.desc
+          display_audio.play()
+        }
+        //   点击项目播放
+        musics.forEach((node) => {
+          $(node.parentNode).click(() => {
             PlayAudio(node)
+          })
         })
-    })
-    // 获取当前item
-    function nowItem() {
-        let index = musicSrcs.indexOf(display_audio.src)
-        return musicSrcNode[musicSrcs[index]].parentElement.parentElement
-    }
-    //   播放下一首
-    playNext.addEventListener('click', (e) => {
-        let index = musicSrcs.indexOf(display_audio.src)
-        index = index + 1
-        if (index === musicSrcs.length)
+        // 获取当前item
+        function nowItem() {
+          let index = musicSrcs.indexOf(display_audio.src)
+          return musicSrcNode[musicSrcs[index]].parentElement.parentElement
+        }
+        //   播放下一首
+        playNext.addEventListener('click', (e) => {
+          let index = musicSrcs.indexOf(display_audio.src)
+          index = index + 1
+          if (index === musicSrcs.length)
             index = 0
-        PlayAudio(musicSrcNode[musicSrcs[index]])
+          PlayAudio(musicSrcNode[musicSrcs[index]])
 
-    })
-    // 自动下一首
-    display_audio.addEventListener('ended', () => {
-        playNext.click()
-    })
-    // 点击定位元素
-    tipNow.addEventListener('click', () => {
-        let node = nowItem()
-        node.scrollIntoView({ behavior: 'auto' })
-        node.style.backgroundColor = 'red'
-    })
-  
-}
-let downAll = document.createElement('button')
-downAll.textContent = '下一页'
-tabAddItem(downAll)
-    $(downAll).click(() => {
+        })
+        // 自动下一首
+        display_audio.addEventListener('ended', () => {
+          playNext.click()
+        })
+        // 点击定位元素
+        tipNow.addEventListener('click', () => {
+          let node = nowItem()
+          node.scrollIntoView({ behavior: 'auto' })
+          node.style.backgroundColor = 'red'
+        })
+
+      }
+      let downAll = document.createElement('button')
+      downAll.textContent = '下一页'
+      tabAddItem(downAll)
+      $(downAll).click(() => {
         const aList = document.querySelectorAll('a'); // 获取所有 a 标签
-aList.forEach(a => { // 遍历所有 a 标签
-  if (a.textContent.trim().indexOf('»') !== -1) {
-    a.click(); // 输出符合条件的 a 标签元素
-  }
-});
-    })
+        aList.forEach(a => { // 遍历所有 a 标签
+          if (a.textContent.trim().indexOf('»') !== -1) {
+            a.click(); // 输出符合条件的 a 标签元素
+          }
+        });
+      })
     </script>
     {% endblock %}

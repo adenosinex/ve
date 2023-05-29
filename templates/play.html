@@ -8,8 +8,13 @@
     }
  </style>
  <h1>{{post.vname}}</h1>
+  <h1>
+
+      <a href="" id="detail">详情页 </a>
+  </h1>
+  
 <div id="play">
-    <video src="/file/{{post.id}}" controls>
+    <video src="/file/{{post.id}}"  controls >
 </div>
        
  
@@ -18,6 +23,34 @@
 
 {% block scripts %}
 {{super()}}
+
+<script>
+    function setVideoStyle() {
+
+        // 初始化视频播放器
+        const player = new Plyr(' .play video', {
+            // 自定义控件
+            controls: [
+                'play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+            ],
+
+            // 设置全屏模式选项
+            fullscreen: {
+                enabled: true,
+                fallback: true,
+
+                iosNative: true
+            },
+            autoplay: [true],
+            title: document.title // 设置视频标题
+        });
+
+    }
+    setVideoStyle()
+
+</script>
+
+
 <script>
      previewsDict = JSON.parse(localStorage.getItem('preLink'));
         if (previewsDict) {
@@ -37,20 +70,12 @@
      // 高度为一屏幕
     file.height = window.innerHeight;
 
-    let id = ReId.exec(file.src)[0]
+    let id = getId(location.href)
     // 提供链接
-    let target = document.createElement('a')
+    let target = document.querySelector('#detail')
     target.href = '/detail/' + id
-    let btn = document.createElement('button')
-    btn.textContent = '详情'
-    btn.className = "btn btn-large btn-primary"
-    target.appendChild(btn)
-
-    let insertObj = $('#play')[0]
-    insertObj.insertBefore(target, insertObj.children[0])
-
-
-
+    target.style.color='wthite'
+ 
     // 停止默认滑动效果
     // document.body.addEventListener('touchmove', function (e) {
     //     e.preventDefault();
@@ -60,8 +85,8 @@
     function swithchhandler(direction){
         id = ReId.exec(file.src)[0]
         let index = previewsList.indexOf(id)
-        pid = previewsSecureId(index - 1)
-        nid = previewsSecureId(index + 1)
+        pid = previewsSecureId(index - 1,previewsList)
+        nid = previewsSecureId(index + 1,previewsList)
 
         switch (direction) {
             case 'down':
@@ -79,7 +104,7 @@
         newUrl = window.location.origin + '/play/' + id
         history.pushState('', '', newUrl);
          
-        setTitle(index,previewsList.length)
+       
         // document.title= previewsDictName[previewsList[index]]
     }
     // 自动下一个

@@ -390,8 +390,11 @@ class VideoM:
     # 缩略图
     @staticmethod
     def shot_thumbnail_cmd(  file, img, t):
-        cmd=f'ffmpeg -y -i "{file}" -ss{t} -vf "thumbnail,scale=320:-1,setsar=1" -frames:v 1 -qscale:v 2 {img}'
-        SystemM.cmd_get(cmd)
+        if os.path.exists(img):
+            return
+        cmd=f'ffmpeg -y  -ss {t} -i "{file}"  -q:v  10 -frames:v 1  -vf scale=300:-1 "{img}"'
+        os.system(cmd+' > NUL 2>&1')
+       
         
     
     def shot_thumbnail(self, file, img, t):
@@ -760,34 +763,9 @@ def format_second_time(seconds):
             return f"{hours}小时 {minutes}分钟 {remaining_seconds}秒"
 
 
-def list_setitem(listitem, n=3):
-    # 有序字典 提取重复列表前n个
-    unique_dict = OrderedDict()
-    for i in listitem:
-        unique_dict[i] = True
-    r = list(unique_dict.keys())[:n]
-    return r
+ 
 
-
-def item_vis(item, app):
-    # 数据数据添加列 更直观
-    item.vsize = f'{item.size//1024**2}MiB' if item.size else 'no-size'
-    # 特定文件指定缩略图名
-    if item.type == 'video' or item.type == 'img':
-        # c=dbm.session.query(IdPath).filter_by(id=item.id).first()
-        c = app.config['data'].get(item.id)
-        if c:
-            item.hashname = c
-    else:
-        item.hashname = f'{item.id}'
-
-    if item.tag and item.tag.like:
-        item.is_like = True
-    if not Path(item.path).suffix in item.name:
-        item.name += Path(item.path).suffix
-    return item
-
-
+ 
 def url_args(url):
     # url参数键值对
     r = dict()
@@ -838,12 +816,16 @@ def convert_time(size_bytes):
     # 返回大小与相应单位的组合作为字符串
     return '{}{}'.format(size, units[i])
 
+def auto_len_name(name,max_length=30):
+    if len(name) > max_length:
+        name= name[:max_length-3]+'...'
+    return name
 
 def item_vis(item, app):
     # 数据数据添加列 更直观
     item.vsize = convert_size(item.size)
     # 获取缩略图位置
-    hashname = app.config['data'].get(item.id)
+    hashname = app.config['data'].get(item.id,f'{item.id}.jpg')
     item.hashname = f'{item.id}' if not hashname else hashname
 
     # 添加标记 是否喜欢
@@ -853,11 +835,9 @@ def item_vis(item, app):
         Path(item.path).suffix if not Path(
             item.path).suffix in item.name else item.name
     # 文件名过长设置
-    item.auto_vname = Path(item.vname).stem
-    max_name = 30
-    if len(item.auto_vname) > max_name:
-        item.auto_vname = item.auto_vname[:max_name]+'...'
-    item.auto_vname += Path(item.vname).suffix
+    item.auto_vname =auto_len_name( Path(item.vname).stem,30) +Path(item.vname).suffix
+    item.auto_shortname =auto_len_name( Path(item.vname).stem,10) +Path(item.vname).suffix
+    
     # tag信息
     s = ''
     if item.tag and item.tag.tag:
@@ -1020,31 +1000,27 @@ def create_small_file_preview():
         # 制作大视频预览图 大视频10张
         print('创建预览图')
         db = Db_Mani('data_explorer.db')
-        videos=db.query("select id,path from file where size>1024*1024*1024 and path NOT LIKE 'del%' order by size desc")
+        min_size=500
+        videos=db.query(f"select file.id,path,duration from file   join video on video.id=file.id where   (size>{min_size}*1024*1024 and path NOT LIKE 'del%') order by size desc")
         dst=Path( r'X:\库\索引\videoshot_preview')
         dir_make(dst)
-        done_files=set(get_files(dst))
+        done_files=set([Path(i).stem for  i in  get_files(dst)])
 
         # @ignore_errors
         def f(ar):
-            vid,video_path=ar
-            times=get_screen_times(VideoM.get_duration(video_path),n=10)
+            vid,video_path,dur=ar
+            dur=dur//1000
+            times=get_screen_times(dur,n=10)
             # 筛选已做时间点
-            for time_point in times:
-                img_path=dst.joinpath(f"{vid}-{time_point}.jpg")
-                img_path=os.path.abspath(img_path)
-                if  img_path  in done_files:
-                    times.remove(time_point)
-            if not times:
-                return
-            
+           
             vidm=VideoM( )
             for time_point in times:
-                img_path=dst.joinpath(f"{vid}-{time_point}.jpg")
-                if img_path in done_files:
+                stem=f'{vid}-{time_point}'
+                if  stem  in done_files:
                     continue
+                img_path=dst.joinpath(f"{stem}.jpg")
                 vidm.shot_thumbnail_cmd(video_path,img_path, time_point)
-        multi_threadpool(func=f,args=videos,desc='视频预览图',pool_size=3)
+        multi_threadpool(func=f,args=videos,desc='视频预览图',pool_size=1)
 
 @cal
 def f():

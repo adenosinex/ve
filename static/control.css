@@ -134,16 +134,19 @@ ul li {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 
 }
+ 
 
 .images-container img {
-
 
     object-fit: cover;
     object-position: center;
     position: relative;
 }
+ 
 
 .image-container {
+    max-width: 200px;
+    width: 100%;
     position: relative;
     display: inline-block;
     /* optional, adjust to your needs */
