@@ -360,16 +360,16 @@ function clickAWithColor(node, funcSuccess = (response) => true) {
         event.stopPropagation()
 
         node.style.backgroundColor = colorWait
-        axios.get(node.href)
-            .then(function (response) {
-                if (funcSuccess(response.data))
+            fetch(node.href)  // 发送 GET 请求到 /greeting 路径
+            .then(response => response.json())  // 将响应转换成纯文本格式
+            .then(data=> {
+                if (funcSuccess(data))
                     node.style.backgroundColor = colorSet
                 else
                     node.style.backgroundColor = colorConcel
-            })
-            .catch(function (error) {
-                node.style.backgroundColor = colorError
-            })
+            })  // 更新 <p> 元素的文本内容
+            .catch(error =>{
+                 node.style.backgroundColor = colorError});  // 处理请求错误
     }
     )
 }
@@ -575,9 +575,48 @@ if (formInput) {
         }
     })
     // 打字结束自动到搜索搜索
-    formInput.addEventListener("compositionend", () => location.href = '/?kw=' + formInput.value);
+    // formInput.addEventListener("compositionend", () => location.href = '/?kw=' + formInput.value);
 }
+function urlSetQuery(url, k, v) {
+    // 若未传入URL，则默认为当前页面URL
+    if (!url){
+      url = window.location.href;
+    }
+    
+    const urlObj = new URL(url);
+    const searchParams = urlObj.searchParams;
+  
+    // 检查是否存在k参数
+    if (searchParams.has(k)) {
+      searchParams.set(k, v);
+    } else {
+      searchParams.append(k, v);
+    }
+  
+    return urlObj.toString();
+  }
+  
 
+    // 计算消耗时间
+    function timeConsuming() {
+        let startTime = null; // 记录起始时间戳
+
+        return function () {
+            if (startTime === null) {
+                // 若是第一次调用，记录起始时间戳并返回函数本身
+                startTime = performance.now();
+
+            } else {
+                // 若是第二次调用，计算消耗时间并输出结果，重置起始时间戳为 null
+                const elapsedTime = performance.now() - startTime;
+                startTime = null;
+                s = `本次操作消耗了 ${elapsedTime.toFixed(2)} 毫秒`
+                return s
+            }
+        };
+    }
+
+    
 
 // 获取网址参数
 function argsGet(url) {

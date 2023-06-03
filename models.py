@@ -41,7 +41,7 @@ class File(db.Model):
         if self.tag:
             tag_obj = self.tag
         else:
-            tag_obj = Tag(id=self.id, utime=int(time.time()))
+            tag_obj = Tag(id=self.id, utime=datetime.now())
         is_add_like=True
         if tag_obj.like:
             tag_obj.like = None
@@ -195,6 +195,7 @@ class Dir(db.Model):
     path = db.Column(db.String, unique=True)
     dir = db.Column(db.String)
     is_extra = db.Column(db.Boolean)
+    add = db.Column(db.Boolean,default=False)
     level = db.Column(db.Integer)
     rank = db.Column(db.Integer)
 
@@ -272,6 +273,11 @@ def db_query_kw(kw,base):
                 if rat_num:
                     base = base.filter(Video.resolution.like(f'%{rat_num}'))
         # 编码方式  
+        elif ':-' in s:
+            part_text=get_value(':-(\w+)',s)
+            if  part_text :
+                base = base.filter(~File.path.like(f'%{part_text}%'))
+
         elif 'mime' in s:
             part_text=get_value('mime:(\w+)',s)
             if  part_text :
@@ -343,6 +349,8 @@ def db_query_data(datat, pn, per_page):
     type = data.get('type')
     if type and type != 'all':
         base = base.filter(File.type == type)
+        if type=='img':
+            base=base.filter(~File.path.like('%shot%'))
     # 关键词筛选
     if data.get('kw'):
         querys = data.get('kw')
@@ -350,6 +358,7 @@ def db_query_data(datat, pn, per_page):
         # 去除条件
         kw=re.sub('\w+:\w+','',querys)
         kw=re.sub('\w+[><]\w+','',kw)
+        kw=re.sub(':-\w+','',kw)
         if kw:
             base = base.filter(query_mul_word(kw.strip()))
             
@@ -523,7 +532,9 @@ class InitData:
                 db.session.add(i)
                 return True
 
-    def scan_dir_isdel(self,d):
+    def scan_dir_isdel(self,d='',id=''):
+        if not d:
+            d=Dir.query.get(id).first().path
         files = File.query.filter(File.path.like(f"%{d}%")).all()
         r=multi_threadpool(func=self._check_file_del, args=files, desc=f'检查文件删除-{Path(d).name}')
         db.session.commit()
@@ -531,6 +542,13 @@ class InitData:
         return len(r)
 
     def rindex_col(self):
+        # 时间戳转字符
+        all=Tag.query.filter(~Tag.utime.like('%:%')).all()
+        for i in all:
+            i.utime=datetime.fromtimestamp(int(i.utime))
+            db.session.add(i)
+        db.session.commit()
+
         # 设置字段
         files = File.query.filter(File.ctime == None).all()
         def fsetctime(i):
@@ -572,9 +590,19 @@ class InitData:
         print(mes1)
         return mes1
 
+    def set_dir_add(self,d):
+        r=Dir.query.filter(Dir.path==d).first()
+        if not r:
+            db.session.add(Dir(path=d,add=True))
+        elif not r.add:
+            r.add=True
+            db.session.add(r)
+        db.session.commit()
+    
     def init_files_bydirs(self, file_dirs):
         # 初始化目录数据 返回修改行数
         # 文件数据与缩略图
+
         if isinstance(file_dirs, list):
             files = []
             for i in file_dirs:
@@ -600,7 +628,7 @@ class InitData:
     def init_dir(self, force=False):
         # 目录数据 擦除重新分析
         if force:
-            db.session.query(Dir).delete(synchronize_session=False)
+            [ db.session.delete(i) for i in Dir.query.filte(Dir.add!=1).all()]
             db.session.commit()
         # 获取新增目录
         dirs = {i[0] for i in db.session.query(distinct(File.dir)).all()}.difference( 
@@ -659,21 +687,26 @@ class InitData:
         dir = [i[0] for i in dirs if not '图文数据' in i[0]]
         self.scan_dir(dir, app)
 
-    def scan_dir(self, p):
-        if isinstance(p, list):
-            r=0
-            for i in p:
-                # 初始化新文件夹
-                r+=self.init_files_bydirs(i)
-        else:
+    def scan_dirs(self, p):
+        r=0
+        for i in p:
             # 初始化新文件夹
-            r = self.init_files_bydirs(p)
+            r+=self.init_files_bydirs(i)
+        self.init_dir(force=True if r > 10**3 else False)
+        return r
+
+    def scan_dir(self, p='',id=''):
+            # 初始化新文件夹
+        if not p:
+            p=Dir.query.get(id).first().path
+        r = self.init_files_bydirs(p)
         #  生成缩略图
         self.init_dir(force=True if r > 10**3 else False)
  
 
 class DailyTask:
     def keep_3day_logs(self):
+        print('清除log ')
         # 只保留三天的历史记录
         today = datetime.now()  # 获取当前日期和时间
         delta = timedelta(days=3)  # 创建一个 timedelta 对象表示过去的三天
@@ -686,6 +719,7 @@ class DailyTask:
             print('清除3天前访问记录：',len(r))
 
     def scan_dir(self):
+        print('添加文件')
         dirs = [r'X:\库\视频\dy like', 
                 # r'X:\库\DyView',
                 r'D:\备份 万一\ds photo\video',]
@@ -718,15 +752,14 @@ class DailyTask:
     def run(self):
         today =  datetime.now().strftime("%Y%m%d")
         cache_file='daily.cache'
-        print('日常任务')
         if not os.path.exists(cache_file) or today!=open(cache_file,'r',encoding='utf-8').read():
-            print('清除log 添加文件')
+            print('日常任务 ',today)
+            
             self.keep_3day_logs()
-            self.scan_dir()
+            # self.scan_dir()
             self.back_code(today)
-            create_small_file()
             with open('daily.cache','w',encoding='utf-8') as f:
                 f.write(today)
-            
-        else:
-            print(today)
+
+            create_small_file()
+     

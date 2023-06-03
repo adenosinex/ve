@@ -1,0 +1,15 @@
+{% for post in posts %}
+<h1 class="indexTitle"> {{ post.index }}:</h1> <h1> {{ post.vtime }}{{ post.vname }} </h1>
+   
+<div class="images-container">
+    {% for element in post.shots  %}
+    <div class="image-container"  >
+        <a href="/detail/{{element.pid}}?t={{element.stime}}">
+            <img src="/file/{{element.id}}"  alt="预览图"  >
+            <div class="text-overlay"> {{element.vtime}} </div>
+        </a>
+    </div>
+    {% endfor %}
+
+</div>
+{% endfor %}

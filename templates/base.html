@@ -6,19 +6,46 @@
 {{ super() }}
 <link rel="icon" href= {{ url_for('static', filename='favicon.ico') }}  type="image/x-icon">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href= {{ url_for('static', filename='bootstrap.min.css') }}  rel="stylesheet">
-<link href= {{ url_for('static', filename='fontawesome/css/all.min.css') }}  rel="stylesheet">
+
+<!-- <link href= {{ url_for('static', filename='bootstrap.min.css') }}  rel="stylesheet"> -->
+<!-- <link href= {{ url_for('static', filename='fontawesome/css/all.min.css') }}  rel="stylesheet"> -->
+<link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/5.15.3/css/all.min.css"  >
+<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.1.3/css/bootstrap.min.css"  >
 <link href= {{ url_for('static', filename='control.css') }}  rel="stylesheet">
+
+<style>
+  body,.firstColor{
+    background-color: #66ccff;
+  }
+  .secondColor{
+    background-color: #f0f0f0;
+  }
+  .thirdColor{
+    background-color: #ffd700;
+  }
+  #fileCore{
+    background-color: #ffd700;
+  }
+  #jumps{
+    background-color: #b69d0b;
+  }
+ 
+  .indexTitle{
+    display: inline;
+  background-color: rgb(188 113 113 / 50%);
+}
+
+</style>
 {% endblock %} 
 
    
 {% block navbar %}
 <header class="d-flex justify-content-center py-3">
-  <ul class="nav nav-pills">
+  <ul class="nav nav-pills thirdColor">
     <li class="nav-item"> <a href="/" class="nav-link  ">首页 </a>  </li>
     |
     <li class="nav-item"> <a href="/keep" class="nav-link keepList" title="ESC键 触发">继续浏览  </a>  </li>
-    <li class="nav-item"> <a href="/detail/-1" class="nav-link ">继续观看  </a>  </li>
+    <li class="nav-item"> <a href="/detail/-1" class="nav-link " id="keepView">继续观看  </a>  </li>
     |
     <li class="nav-item">  <a href="/shots" class="nav-link" target="_blank"> 观看记录</a> </li>
     <li class="nav-item">  <a href="/log" class="nav-link" target="_blank">历史记录</a> </li>
@@ -47,13 +74,17 @@
  
 
 {% block scripts %}
-<script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>
+<!-- <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/axios.min.js') }}"></script>
  
-<script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
-<script src={{ url_for('static', filename='control.js') }}></script>
+<script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script> -->
 <script src="https://cdn.plyr.io/3.6.4/plyr.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/popper.js/1.14.3/umd/popper.min.js"  ></script>
+<script src="https://cdn.bootcss.com/bootstrap/4.1.3/js/bootstrap.min.js"  ></script>
+
+<script src={{ url_for('static', filename='control.js') }}></script>
 {% endblock %}

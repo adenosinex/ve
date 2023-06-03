@@ -14,7 +14,7 @@ app = creat_app('pro')
 per_page = 100
 
 
-def back_work(f):
+def back_work(f ):
     # 后台 在程序上下文执行
     def func():
         with app.app_context():
@@ -43,19 +43,22 @@ def tags_get():
     
     return all_tag,tags_rec
 
-db_query_data
+ 
 # 常规任务
 with app.app_context():
-    db.create_all()
+    def f():
+        
+        pass
+    f()
     app.config['data'] = thumbnail_index(app.config.get('SMALL_FILE_PATH'))
     app.config['preview_data'] = thumbnail_index(
         r'X:\库\索引\videoshot_preview', lambda i, p: i)
     DailyTask().run()
     Tag.del_empty()
-    tags_get()
-    File.set_tag
+    back_work(f=create_small_file)
+   
 
-db_query_data
+ 
 def collect_file(url):
     # 收集文件 放在磁盘目录 url参数筛选 后台程序
     if 'sort:random' in url:
@@ -127,7 +130,7 @@ def index():
     data['pagination'] = pgn
     data['dirs_data'] = dirs_data
     data.update({
-        'pages': f'页码:{pgn.page}({pgn.pages}) 个数:{pgn.per_page}({pgn.total})',
+        'pages': f'页码:{pgn.page}/{pgn.pages}({pgn.per_page}) 个数:{pgn.total}',
         'spend_time': spend_time(start_time),
         'type': kwargs_page.get('type'),
         'kws': kws
@@ -200,7 +203,8 @@ def detail(id ):
     
     data = {
         'form': tf,
-        'tags': tags_rec+tags_all,
+        'tagsRec': tags_rec,
+        'tagsTop':tags_all,
     }
     if item.tag and item.tag.tag:
         item.tag.vtags=[i for i in item.tag.tag.split(',') if i]
@@ -359,14 +363,21 @@ def rel_data(item):
 @app.route('/shots', methods=['GET', 'POST'])
 def shots():
     # 截图预览跳转
-    n=request.args.get('num',100)
-    files = File.query.join(Shot).filter(File.id.in_(db.session.query(Shot.pid).filter_by(is_auto=0) )).order_by(Shot.ctime.desc()).limit(n).all()
+    per_page=int(request.args.get('num',10))
+    pn=int(request.args.get('pn',1))
+    start=per_page*(pn-1)
+    ids = db.session.query(Shot.pid).filter_by(is_auto=0).group_by(Shot.pid).order_by(desc(func.max(Shot.ctime))).all()
+    ids=[i.pid for i in ids[start:start+per_page]]
+    files=File.query.join(Shot).filter(File.id.in_(ids)).order_by(case(value=File.id, whens={i: n for n, i in enumerate(ids)})).all()
+   
+     
     for file in files:
         for shot in file.shot:
             shot.vtime = format_second_time(shot.stime)
-
+  
     files = items_vis(files, app)
     files.sort(key=lambda x: x.shot[0].ctime, reverse=True)
+    cnt=count(start+1)
     for item in files:
         # 相对时间
         item.shots=list(filter(lambda x:x.is_auto==0,item.shot))
@@ -374,6 +385,12 @@ def shots():
         # 截图排序
         item.shots.sort(key=lambda x: x.stime)
         item.length = len(item.shots)
+        # 项目索引
+        item.index=next(cnt)
+
+    if  request.args.get('part',False):
+        return render_template('part_videoshots.html', posts=files)
+    
     return render_template('shots.html', posts=files)
 
 
@@ -385,8 +402,21 @@ def func_name(id):
 
 
 @app.route('/add', methods=['GET', 'POST'])
-def add_files():
+@app.route('/add/<id>', methods=['GET', 'POST'])
+def add_files(id=''):
     addform = AddDirForm()
+    if id :
+        if request.args.get('op')=='del':
+            def f():
+                r = InitData().scan_dir_isdel(id=id)
+            back_work(f)
+            flash('正在核对删除')
+        if request.args.get('op')=='add':
+            def f():
+                InitData().scan_dir(id=id)
+                create_small_file()
+            back_work(f)
+            flash('正在添加数据')
     
     if addform.validate_on_submit():
         if addform.isdelpath.data:
@@ -404,8 +434,8 @@ def add_files():
                 create_small_file()
             back_work(f)
             flash('正在添加数据')
-
-    return render_template('add.html', form=addform )
+    dirs=Dir.query.filter(Dir.add==True).all()
+    return render_template('add.html', form=addform ,posts=dirs)
 
 
 def files_info(files):

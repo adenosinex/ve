@@ -147,18 +147,28 @@ def func_name213(id):
     #     return jsonify({'status':'error'})
     if video_path.exists():
         st=time.time()
-        r=VideoM().get_img(video_path,img_path, time_start)
+        r=VideoM().get_img2(video_path,img_path, time_start)
         if r:
             InitData().add_file(img_path)
             db.session.commit()
             Shot.add(img_path,id,time_start)
             print(img_path,spend_time(st))
-            return jsonify({'status':'success'})
+            return jsonify({'status':'success set'})
     return jsonify({'status':'error video not exist'})
 
  
  
 
+# 测试当前时间
+@api_bp.route('/partHtml')
+def api_part( ):
+    if request.args.get('part') == 'dataInfo':
+        num_data,num_shot,num_autoshot=File.query.count(),Shot.query.filter_by(is_auto=False).count(),Shot.query.filter_by(is_auto=True).count()
+        s=f'全部数据：{num_data} 截图数：{num_shot} 预览图数：{num_autoshot}'
+        num_deldata,num_notexist =File.query.join(Tag,File.id==Tag.id).filter(Tag.tag=='del').count(),File.query.filter(File.path.startswith('del')).count() 
+        s2=f'\n标记删除：{num_deldata} 移除文件：{num_notexist}'
+        return s+s2
+    
 # 测试当前时间
 @api_bp.route('/now')
 def api_now( ):

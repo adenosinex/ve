@@ -2,7 +2,7 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% import "_macros.html" as macros %}
 
-{% block title %}Gallery{% endblock %}
+{% block title %}V Explorer{% endblock %}
 {% block page_content %}
 
 
@@ -16,6 +16,9 @@
     background-color: yellow;
     /* 高亮部分颜色 */
   }
+  .dbdata{
+    background-color: antiquewhite;
+  }
 </style>
 <!-- 搜索栏 -->
 {% macro mkws(kw) -%}
@@ -24,7 +27,7 @@
 </a>
 {%- endmacro %}
 
-<div>
+<div class="search thirdColor">
   <!--示例 {{ wtf.quick_form(form, id='loginform', action='/login', form_type='horizontal', horizontal_columns=('lg',4,4)) }} -->
   {%if form%}
   {{ wtf.quick_form(form,id="searchForm") }}
@@ -33,7 +36,12 @@
     <p>搜索技巧 {{ mkws('size>1024') }} 限定大小 单位MB {{ mkws('pathid:1') }} 限定特定目录下
       {{ mkws('rat:4K') }} 4k视频 {{ mkws('rat:576P') }} 1K以下视频
       编码 {{ mkws('mime:h265') }} {{ mkws('mime:other') }}
+      排除关键字 {{ mkws(':-水果') }} 
     </p>
+    <div class="dbdata">
+      <p>数据库信息</p>
+      <div id="dataInfo"></div>
+    </div>
     <p>收集设置 “num&lt5” 限定个数(包含) “sort:random” 随机排序(多次采集文件数不准确) </p>
 
   </div>
@@ -96,7 +104,12 @@
     selectElement.addEventListener('change', function () {
       var selectedValue = selectElement.value;
       if (selectedValue) {
-        window.location.href = selectedValue;
+        let url=selectedValue
+        // if (document.querySelector('#search').value){
+
+        //     url= urlSetQuery(selectedValue,'kw',document.querySelector('#search')) 
+        // }
+        window.location.href = url;
       }
     });
   }
@@ -131,6 +144,9 @@
         break;
       case 'ArrowRight': // 右箭头
         location.href = getNextPageUrl()
+        break;
+      case 'Escape': // 右箭头
+         document.querySelector("#keepView").click()
         break;
 
     }
@@ -188,14 +204,17 @@
     <script>
       // 清空相关作品数据
       localStorage.setItem('imageLinks', JSON.stringify([]));
-      // 自动定位上一个元素
+      // 自动定位上一个元素 设定继续观看链接
       lastId = localStorage.getItem('lastId')
       let ele=document.querySelector(`[data-id="${lastId}"]`)
-      if (lastId&&ele) {
-        ele.scrollIntoView()
+      if (lastId ) {
+        if (ele){
+          ele.scrollIntoView()
+          ele.style.backgroundColor='red'
+          document.querySelector('#keepView').href='/detail/'+lastId
+        }
       }
       else {
-
         // 焦点到关键词
         let first_kw = document.querySelector('.kws a')
         if (first_kw)
@@ -238,8 +257,22 @@
       }
 
 
-      
+       // 更新部分数据
+    function updatePart(url,element) {
+      cnt=timeConsuming()
+      cnt()
+        fetch(url)  // 发送 GET 请求到 /greeting 路径
+            .then(response => response.text())  // 将响应转换成纯文本格式
+            .then(text => {
+                if (element)
+              
+                element.innerHTML = `${cnt()} <br> ${text}`
+               
+            })  // 更新 <p> 元素的文本内容
+            .catch(error => console.error(error));  // 处理请求错误
 
+    }
+    updatePart('/partHtml?part=dataInfo',document.querySelector('#dataInfo'))
 
       let container = document.createElement('div')
       container.className = 'functionContainer'

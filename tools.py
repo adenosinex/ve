@@ -321,7 +321,6 @@ class Db_Mani:
                for i in r if not '-' in i[1]]
         self.insm('update web_fc set ctime=? where id=?', ins)
 
-
 class VideoM:
 
     def __init__(self,file='') -> None:
@@ -381,6 +380,13 @@ class VideoM:
         if os.path.exists(r):
             return True
     # 截图
+    def get_img2(self, video_path, img_path, time_start):
+        if os.path.exists(img_path):
+            return True
+        cmd=f'ffmpeg -y  -ss {time_start} -i "{video_path}"    -frames:v 1   "{img_path}"'
+        os.system(cmd+' > NUL 2>&1')
+        if os.path.exists(img_path):
+            return True
 
     def get_img(self, video_path, img_path, time_start):
         def f(v, t):
@@ -398,7 +404,7 @@ class VideoM:
         
     
     def shot_thumbnail(self, file, img, t):
-        cmd='ffmpeg -i input.mp4 -vf "thumbnail,scale=320:240,setsar=1" -frames:v 1 -qscale:v 2 output.jpg'
+       
         def f(v, t):
             v = v.resize(0.1)
             v.save_frame(img, t=t)

@@ -23,14 +23,32 @@
     #info {
         position: relative;
     }
+    .convTag   {
+    background-color: #7e7272;
+}
+    .convTag  a {
+    margin: 2px;
+    background-color: #052b596b;
+}
+    .recTag {
+    
+    background-color: #7b592c;
+}
+    .topTag {
+   
+    background-color: #a67431;
+}
+.rel_creation{
+    background-color: #ab1919;
+}
 </style>
 {% endblock %}
 
 {% block page_content %}
-
-
+ 
+<div id="fileCore">
 <!-- 标题 -->
-<div id="src">
+<div id="src" >
     <h1>
         <a href="/file/{{post.id}}?down=1" download="{{post.vname}}" title="下载">
             <i class="fas  fa-download  "></i>
@@ -47,45 +65,38 @@
             title="0">
             <i class="fas  fa-heart  "></i>
         </a>
-        <a href="" id="shotvideo" class="btn btn-primary ajaxLink" title="快捷键“1”">
+        <a href="" id="shotvideo" class="btn btn-primary  ajaxLink" title="快捷键“1”">
             <i class="fas fa-camera  "></i> <span id="shots_num"> </span>
         </a>
 
     </h1>
-    <!-- 源文件 -->
-    <div class="file player">
-        {%if post.type=='music'%}
-        <audio id="{{post.id}}" src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
-            preload="metadata"></audio>
-        {%elif post.type=='video'%}
-
-        <video src="/file/{{post.id}}" id='play' title="方向键跳跃 ctrl加速跳跃" allowfullscreen>
-            {% if post.size>1024**3 %}
-            <track label="中文" kind="subtitles" srclang="cn" src='/subtitles/{{post.id}}' default>
-            {% endif %}
-
-        </video>
-        {%elif post.type=='img'%}
-        <img src="/file/{{post.id}}" alt={{post.vname}}>
-        {%endif %}
-    </div>
 </div>
-{% macro next(id,cla,row,name,href='') -%}
 
-<div class="col-{{row}}">
-    <a href="{{href}}" id="{{id}}" class="{{cla}}">{{name}}</a>
+ <!-- 源文件 -->
+ <div class="file player" >
+    {%if post.type=='music'%}
+    <audio id='displaySrc' src="/file/{{post.id}}" data-desc="{{post.vname}}" alt="{{post.vname}}"
+        preload="metadata"></audio>
+    {%elif post.type=='video'%}
+
+    <video src="/file/{{post.id}}" id='displaySrc' title="方向键跳跃 ctrl加速跳跃" allowfullscreen>
+        {% if post.size>1024**3 %}
+        <track label="中文" kind="subtitles" srclang="cn" src='/subtitles/{{post.id}}' default>
+        {% endif %}
+
+    </video>
+    {%elif post.type=='img'%}
+    <img src="/file/{{post.id}}" id='displaySrc' alt={{post.vname}}>
+    {%endif %}
 </div>
-{%- endmacro %}
+
 <!-- 工具栏 -->
 <div class="tools row">
-    <!-- <span id="index" class="display-5">index</span> -->
-    <!-- {{next('index',"btn btn-primary ",2,'index','/keep')}} -->
-
     <div class="col-2">
-        <span style="font-size: 24px;"> 多页面操作：</span>
-        <a href="/keep" id="index" title="索引" style="font-size: 24px;">
+        <span style="font-size: 24px;"> 多页面操作：<a href="/keep" id="index" title="首页" style="font-size: 24px;">
             index
-        </a>
+        </a></span>
+        
     </div>
 
     <div class="col-1">
@@ -93,68 +104,90 @@
             <i class="fas fa-angle-left fa-3x"></i>
         </a>
     </div>
-    <div class="col-1">
+    <div class="col-2">
         <a href="" id="next" title="下一个">
             <i class="fas fa-angle-right fa-3x"></i>
         </a>
     </div>
+    <div class="col-2">
+        <a class="btn btn-primary" id="acc">
+            <span class="fa fa-arrow-right  "></span> 加速
+          </a>
+    </div>
+
     <div class="col-1">
         <a href="/play/{{post.id}}" id="focus" title="专注页">
-
             <i class="fas fa-play fa-3x"></i>
         </a>
     </div>
-
-
-
-
-    <!-- {{next('shotvideo',"btn btn-primary ajaxLink ",2,'截图')}} -->
 
     <div class="col-3">
         <span id="progressNow">1 </span><progress value="0" max="100" title="进度" id="itemsProgress"></progress> <span
             id="progressLength">10</span>
     </div>
 </div>
-<!-- 截图 -->
-<h3>预览画面 点击跳转</h3>
-<div class="images-container ">
-    {% for element in post.pshots %}
-    <div class="image-container" data-time="{{element.stime}}">
-        <img src="/thumb/{{post.id}}-{{element.stime}}" alt="预览图">
-        <div class="text-overlay"> {{element.vtime}} </div>
-    </div>
-    {% endfor %}
 </div>
-<h3>截图画面 点击跳转 <span id="shotSpendtime"></span></h3>
-<div class="images-container" id="shots">
-    {% for element in post.shots %}
-    <div class="image-container" data-time="{{element.stime}}">
-        <img src="/file/{{element.id}}" alt="预览图">
-        <div class="text-overlay"> {{element.vtime}} </div>
+
+<div id="jumps">
+    <!-- 截图 -->
+    {% if post.pshots %}
+    <h3>预览画面 点击跳转</h3>
+    <div class="images-container ">
+        {% for element in post.pshots %}
+        <div class="image-container" data-time="{{element.stime}}">
+            <img src="/thumb/{{post.id}}-{{element.stime}}" alt="预览图">
+            <div class="text-overlay"> {{element.vtime}} </div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
+    {% endif %}
+
+    {% if post.shots %}
+    <h3>截图画面 点击跳转 <span id="shotSpendtime"></span></h3>
+    <div class="images-container" id="shots">
+        {% for element in post.shots %}
+        <div class="image-container" data-time="{{element.stime}}">
+            <img src="/file/{{element.id}}" alt="预览图">
+            <div class="text-overlay"> {{element.vtime}} </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    
 </div>
+
+
+
+
 <!-- 提交 -->
 <div class="inputTag">
 
-    <div class="conv">
+    <div class="convTag">
         <hr>
         <h3>快捷添加tag</h3>
         {%if post.tag and post.tag.tag%}<h3>已加标签:
             {% for tag in post.tag.vtags %}
             <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink-status">{{tag}}</a>
             {% endfor %}
-
-
         </h3> {% endif%}
-        {% for tag in tags %}
-        <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>
-        {% endfor %}
+        <div class="recTag">
+            {% for tag in tagsRec %}
+            <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>
+            {% endfor %}
+        </div>
+
+        <tag class="topTag">
+            {% for tag in tagsTop %}
+            <a href="/tag/{{post.id}}?tag={{tag}}" class="btn btn-primary ajaxLink">{{tag}}</a>
+            {% endfor %}
+
+        </tag>
     </div>
     {{ wtf.quick_form(form,id="tagForm") }}
 </div>
 <br>
-<div id="info">
+<div id="info" class="secondColor">
     {% if post.dylink %}
     <h3> <a href={{post.dylink}} title="进入抖音视频页" class="dir" target="_blank">抖音链接</a></h3>
     {% endif %}
@@ -165,15 +198,16 @@
     </h3>
     <h3> <a href="/?dir_num={{post.dirobj.id}}" title="进入目录" class="dir">目录:{{post.dir}}</a></h3>
 
-    {% macro rel_cre(id,name) -%}
-    <a href="/detail/{{id}}" class="btn btn-primary">
-        {{name}}
-    </a>
-    {%- endmacro %}
-    <div class="rel_creation">
-        <h3>相关作品</h3>
+    
+</div>
+{% macro rel_cre(id,name) -%}
+<a href="/detail/{{id}}" class="btn btn-primary">
+    {{name}}
+</a>
+{%- endmacro %}
 
-    </div>
+<div class="rel_creation">
+    <h3>相关作品</h3>
 
 </div>
 <hr>
@@ -194,7 +228,7 @@
             controls: [
                 'play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
             ],
-
+            
             // 设置全屏模式选项
             fullscreen: {
                 enabled: true,
@@ -207,7 +241,7 @@
             hideControls: false,
             displayDuration: false,
         });
-
+      
     }
     setVideoStyle()
 
@@ -267,21 +301,25 @@
         prev.href = plink
         let tip = document.querySelector('#index')
         tip.textContent = index
+        let acc = document.querySelector('#acc')
+        acc.addEventListener('click',()=>{
+            accVideo(true)
+        })
 
     }
 
-    // 三次触摸切换到play模式
-    ntouchEvent(3, document.querySelector('video'), () => { location.href = '/play/' + id })
-    nclickEvent(3, document.querySelector('video'), () => { location.href = '/play/' + id })
-
+    
     // 获取文件自动播放 设置id
-    let video = document.querySelector('#play')
-    video.focus()
-    let tagname = video.tagName
+    let displaySrc = document.querySelector('#displaySrc') 
+    displaySrc.focus()
+    // 三次触摸切换到play模式
+    ntouchEvent(3,displaySrc, () => { location.href = '/play/' + id })
+    nclickEvent(3,displaySrc, () => { location.href = '/play/' + id })
+    let tagname = displaySrc.tagName
     if (tagname === 'VIDEO' || tagname === 'AUDIO') {
-        video.play()
+        displaySrc.play()
         // 播放完自动下一个
-        video.addEventListener('ended', () => { next.click() })
+        displaySrc.addEventListener('ended', () => { next.click() })
     }
     class VideoPlayPoints {
         constructor(maxLength) {
@@ -306,13 +344,13 @@
     const myStruct = new VideoPlayPoints(3)
     
     // 监听视频更新时间事件
-   video.addEventListener('seeked',()=>{
-    myStruct.setItem(urlId,video.currentTime)
+   displaySrc.addEventListener('seeked',()=>{
+    myStruct.setItem(urlId,displaySrc.currentTime)
    })
 
     // 播放视频前先检查localStorage中是否有记录，如果有则恢复到上次播放的时间
     if(myStruct.getItem(urlId))
-    video.currentTime=myStruct.getItem(urlId)
+    displaySrc.currentTime=myStruct.getItem(urlId)
 
     // url参数跳转
     function jumpPlay() {
@@ -322,7 +360,7 @@
         // 判断是否存在某个参数
         if (urlParams.has('t')) {
             const t = urlParams.get('t');
-            video.currentTime = t
+            displaySrc.currentTime = t
         }
     }
     jumpPlay()
@@ -331,15 +369,13 @@
         let shots = document.querySelectorAll('.image-container')
         shots.forEach((node) => {
             node.addEventListener('click', (e) => {
-                video.currentTime = node.dataset.time
+                accVideo(true)
             })
         })
 
     }
     imgsJump()
-    // 高度为一屏幕
-    // file.height = window.innerHeight;
-
+   
     // 更新相关作品容器数据
     function updaterel() {
         fetch('/detail/' + urlId + '?part=rels')  // 发送 GET 请求到 /greeting 路径
@@ -376,36 +412,14 @@
                 document.querySelector('#shots').innerHTML = text
                 // 添加监听器
                 imgsJump()
-                updateShotsNum()
+                
             })  // 更新 <p> 元素的文本内容
             .catch(error => console.error(error));  // 处理请求错误
     }
-    // 计算消耗时间
-    function timeConsuming() {
-        let startTime = null; // 记录起始时间戳
-
-        return function () {
-            if (startTime === null) {
-                // 若是第一次调用，记录起始时间戳并返回函数本身
-                startTime = performance.now();
-
-            } else {
-                // 若是第二次调用，计算消耗时间并输出结果，重置起始时间戳为 null
-                const elapsedTime = performance.now() - startTime;
-                startTime = null;
-                s = `本次操作消耗了 ${elapsedTime.toFixed(2)} 毫秒`
-                return s
-            }
-        };
-    }
-
-
-
-
 
     // 延迟更新内容 截图
     document.querySelector('#shotvideo').addEventListener('click', (e) => {
-        let url = '/shotset/' + urlId + '?time=' + Math.floor(video.currentTime)
+        let url = '/shotset/' + urlId + '?time=' + Math.floor(displaySrc.currentTime)
         const consumeTime = timeConsuming(); // 获取函数
         consumeTime(); // 第一次调用，返回函数
         fetch(url)  // 发送 GET 请求到 /greeting 路径
@@ -414,7 +428,7 @@
                 // 添加监听器
                 document.querySelector("#shotSpendtime").textContent = consumeTime()
                 updateshots(urlId)
-
+                updateShotsNum()
             })  // 更新 <p> 元素的文本内容
             .catch(error => console.error(error));  // 处理请求错误
 
@@ -444,20 +458,28 @@
     deleteA = document.querySelector('.setdel')
     likeA = document.querySelector('.setlike')
     keepA = document.querySelector('.keepList')
+    function accVideo(acc){
+        let jumpDistance = Math.max(displaySrc.duration * 0.05, 5)
+        if(acc)
+        displaySrc.currentTime = Math.min(displaySrc.currentTime + jumpDistance, displaySrc.duration - 3);
+        else
+        displaySrc.currentTime = Math.max(displaySrc.currentTime - jumpDistance, 0);
+
+        console.log(jumpDistance)
+    }
     document.addEventListener('keydown', (event) => {
         // ctrl 组合键百分比跳转
-        let jumpDistance = Math.max(video.duration * 0.05, 5)
         if (event.ctrlKey && event.key === "ArrowLeft") {
-            video.currentTime = Math.max(video.currentTime - jumpDistance, 0);
+            accVideo(false)
             return
         }
         else if (event.ctrlKey && event.key === "ArrowRight") {
+            accVideo(true)
 
-            video.currentTime = Math.min(video.currentTime + jumpDistance, video.duration - 3);
             return
         }
 
-        console.log(jumpDistance)
+       
         // 待输入tag
         if (event.key === 'Enter' && event.ctrlKey) {
             let t = document.querySelector('.inputTag form input')
@@ -469,11 +491,11 @@
         }
         switch (event.key) {
             case 'ArrowLeft':
-                video.currentTime = Math.max(video.currentTime - 3, 0)
+                displaySrc.currentTime = Math.max(displaySrc.currentTime - 3, 0)
                 event.preventDefault()
                 break;
             case 'ArrowRight':
-                video.currentTime = Math.min(video.currentTime + 3, video.duration)
+                displaySrc.currentTime = Math.min(displaySrc.currentTime + 3, displaySrc.duration)
                 event.preventDefault()
                 break;
             case 'ArrowUp':
@@ -496,21 +518,14 @@
             case "Escape":
                 keepA.click()
                 break;
-            // case "ArrowRight":
-            //     video.currentTime = Math.min(video.currentTime + jumpDistance, video.duration - 3);
-            //     event.preventDefault()
-            //     break;
-            // case "ArrowLeft":
-            //     video.currentTime = Math.max(video.currentTime - jumpDistance, 0);
-            //     event.preventDefault()
-            //     break;
+ 
             case "`":
-                video.currentTime = video.duration / 2
+                displaySrc.currentTime = displaySrc.duration / 2
                 break;
             case " ":
                 // 空格暂停 没在焦点接管
-                if (video !== document.activeElement) {
-                    video.focus()
+                if (displaySrc !== document.activeElement) {
+                    displaySrc.focus()
                     // event.preventDefault()
                     // video.paused ? video.play() : video.pause();
                 }
@@ -521,7 +536,7 @@
     })
 
     // 双击下一个
-    nclickEvent(2, video, () => {
+    nclickEvent(2, displaySrc, () => {
         next.click()
     })
 

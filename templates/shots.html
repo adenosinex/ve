@@ -1,21 +1,52 @@
 {% extends "base.html" %}
 {% block page_content %}
 <!-- 截图 -->
-<h3>预览画面 点击跳转</h3>
-{% for post in posts %}
-{{ post.vtime }}{{ post.vname }}
-<div class="images-container">
-    {% for element in post.shots  %}
-    <div class="image-container"  >
-        <a href="/detail/{{element.pid}}?t={{element.stime}}">
-            <img src="/file/{{element.id}}"  alt="预览图"  >
-            <div class="text-overlay"> {{element.vtime}} </div>
-        </a>
+<div id="shots">
+    <h3>预览画面 点击跳转</h3>
+    {% for post in posts %}
+    <h1 class="indexTitle"> {{ post.index }}:</h1> <h1> {{ post.vtime }}{{ post.vname }} </h1>
+   
+    <div class="images-container">
+        {% for element in post.shots  %}
+        <div class="image-container"  >
+            <a href="/detail/{{element.pid}}?t={{element.stime}}">
+                <img src="/file/{{element.id}}"  alt="预览图"  >
+                <div class="text-overlay"> {{element.vtime}} </div>
+            </a>
+        </div>
+        {% endfor %}
+        
     </div>
     {% endfor %}
-    
+
 </div>
-{% endfor %}
 
-
+<script>
+    let nowPn=2
+let nextPn=3
+window.addEventListener('scroll', function() {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+      // 当用户滚动到页面底部时
+      // 发送网络请求
+      function updateshots(url) {
+        fetch(url)  // 发送 GET 请求到 /greeting 路径
+            .then(response => response.text())  // 将响应转换成纯文本格式
+            .then(text => {
+                let t=document.querySelector('#shots')
+                t.innerHTML = t.innerHTML+ text
+                nextPn+=1
+            })  // 更新 <p> 元素的文本内容
+            .catch(error => nowPn-=1);  // 处理请求错误
+        slee
+    }
+    let url="/shots?part=true&pn="+nowPn
+    if(nowPn!==nextPn){
+        nowPn=nextPn
+        updateshots(url)
+        console.log(nowPn)
+        }
+    }
+  });
+  
+</script>
 {% endblock %}

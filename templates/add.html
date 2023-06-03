@@ -13,5 +13,17 @@
     <br>
 </div>
 
- 
+ <div class="list">
+    {% for post in posts %}
+    <h3>
+
+        {{ post.path }} 
+    </h3>
+
+        <a href="/add/{{post.id}}?op=add" class="btn btn-primary">添加新文件</a>
+        <a href="/add/{{post.id}}?op=del"  class="btn btn-primary">标记不存在文件</a>
+    <hr>
+    {% endfor %}
+    
+ </div>
 {% endblock %}
